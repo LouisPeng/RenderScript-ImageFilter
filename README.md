@@ -1,4 +1,4 @@
 RenderScript-ImageFilter
 ========================
 
-Implements the ImageFilter by RenderScript( Idea from ImageFilterForAndroid)
+Implements the ImageFilter by RenderScript.
