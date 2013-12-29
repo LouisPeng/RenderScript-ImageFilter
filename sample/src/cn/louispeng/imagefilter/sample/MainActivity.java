@@ -1,6 +1,12 @@
+
 package cn.louispeng.imagefilter.sample;
 
-import java.util.ArrayList;
+import cn.louispeng.imagefilter.renderscript.ScriptC_BlackWhiteFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_BrickFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_FeatherFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_GradientMapFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_NoiseFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_SaturationModifyFilter;
 
 import android.app.Activity;
 import android.graphics.Bitmap;
@@ -15,11 +21,8 @@ import android.view.Menu;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.ImageView;
-import cn.louispeng.imagefilter.renderscript.ScriptC_BlackWhiteFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_BrickFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_GradientMapFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_NoiseFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_SaturationModifyFilter;
+
+import java.util.ArrayList;
 
 public class MainActivity extends Activity {
     private class FilterTask extends AsyncTask<Void, Void, Void> {
@@ -176,16 +179,45 @@ public class MainActivity extends Activity {
         }
     };
 
+    private class FeatherFilter implements IImageFilter {
+        @Override
+        public void process() {
+            mInAllocation = Allocation.createFromBitmap(mRS, mBitmapIn, Allocation.MipmapControl.MIPMAP_NONE,
+                    Allocation.USAGE_SCRIPT);
+            mOutAllocation = Allocation.createFromBitmap(mRS, mBitmapOut, Allocation.MipmapControl.MIPMAP_NONE,
+                    Allocation.USAGE_SCRIPT);
+
+            ScriptC_FeatherFilter script = new ScriptC_FeatherFilter(mRS, getResources(), R.raw.featherfilter);
+
+            script.set_gIn(mInAllocation);
+            script.set_gOut(mOutAllocation);
+            script.set_gScript(script);
+
+            long startTime = System.currentTimeMillis();
+
+            script.invoke_setup();
+            script.invoke_featherFilter();
+
+            mOutAllocation.copyTo(mBitmapOut);
+
+            Log.d("profile", script.getClass().getSimpleName() + " use " + (System.currentTimeMillis() - startTime));
+        }
+    };
+
     private final ArrayList<IImageFilter> mFilterList = new ArrayList<IImageFilter>();
 
     private ImageView in;
+
     private ImageView out;
 
     private Bitmap mBitmapIn;
+
     private Bitmap mBitmapOut;
 
     private RenderScript mRS;
+
     private Allocation mInAllocation;
+
     private Allocation mOutAllocation;
 
     private int mFilterIndex = 0;
@@ -197,10 +229,10 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mBitmapIn = loadBitmap(R.drawable.image);
+        mBitmapIn = loadBitmap(R.drawable.image2);
         mBitmapOut = Bitmap.createBitmap(mBitmapIn.getWidth(), mBitmapIn.getHeight(), mBitmapIn.getConfig());
 
-        in = (ImageView) findViewById(R.id.displayin);
+        in = (ImageView)findViewById(R.id.displayin);
         in.setImageBitmap(mBitmapIn);
         in.setOnClickListener(new OnClickListener() {
             @Override
@@ -212,21 +244,20 @@ public class MainActivity extends Activity {
             }
         });
 
-        out = (ImageView) findViewById(R.id.displayout);
+        out = (ImageView)findViewById(R.id.displayout);
         out.setImageBitmap(mBitmapOut);
 
         mRS = RenderScript.create(this);
         mRS.setErrorHandler(new RSErrorHandler() {
-
             @Override
             public void run() {
                 Log.e(MainActivity.this.getApplication().getPackageName(), "RenderScripte Error = "
                         + this.mErrorMessage);
                 super.run();
             }
-
         });
 
+        mFilterList.add(new FeatherFilter());
         mFilterList.add(new BrickFilter());
         mFilterList.add(new BlackWhiteFilter());
         mFilterList.add(new NoiseFilter());
