@@ -17,9 +17,10 @@ rs_script gScript;
 static float LUT[255] = {0.0f};
 
 static float InitLUTtableItem(const float _fInvGamma, const int nLUTIndex) {
+	// FIXME
 	float fMax = pow(255.0, _fInvGamma) / 255.0f;
 	float d = pow((float)nLUTIndex, _fInvGamma);
-	return FClamp0255Float(d / fMax);
+	return FClamp01Float(d / fMax);
 }
 
 static void InitLUTtable() {
@@ -35,8 +36,6 @@ void gammaFilter() {
     rsForEach(gScript, gIn, gOut, 0, 0);	// for each element of the input allocation,
     										// call root() method on gScript
 }
-
-
 
 void root(const uchar4 *v_in, uchar4 *v_out, const void *usrData, uint32_t x, uint32_t y) {
 	float4 f4 = rsUnpackColor8888(*v_in);	// extract RGBA values, see rs_core.rsh

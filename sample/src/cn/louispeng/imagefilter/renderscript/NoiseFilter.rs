@@ -11,7 +11,6 @@ rs_script gScript;
 
 // magic factor
 static const float Intensity = 0.2f;
-static const int32_t Num = (int32_t)(Intensity * 32768.0f);
 
 void noiseFilter() {
     rsForEach(gScript, gIn, gOut, 0, 0);	// for each element of the input allocation,
@@ -19,19 +18,16 @@ void noiseFilter() {
 }
 
 void root(const uchar4 *v_in, uchar4 *v_out, const void *usrData, uint32_t x, uint32_t y) {
-	float3 f3 = {0.0f, 0.0f, 0.0f};
 	float4 f4 = rsUnpackColor8888(*v_in);	// extract RGBA values, see rs_core.rsh
+	float3 f3;
 	
-    if (Num != 0) {
-        int r = rsRand(-255, 0xff) * Num;
-        int g = rsRand(-255, 0xff) * Num;
-        int b = rsRand(-255, 0xff) * Num;
-        int rr = f4.r + (r >> 15);
-        int gg = f4.g + (g >> 15);
-        int bb = f4.b + (b >> 15);
-        f3.r = FClamp0255Float(rr);
-        f3.g = FClamp0255Float(gg);
-        f3.b = FClamp0255Float(bb);
+    if (Intensity != 0) {
+        f3.r = f4.r + rsRand(-1.0f, 1.0f) * Intensity;
+        f3.g = f4.g + rsRand(-1.0f, 1.0f) * Intensity;
+        f3.b = f4.b + rsRand(-1.0f, 1.0f) * Intensity;
+        f3 = FClamp01Float3(f3);
+    } else {
+    	f3 = f4.rgb;
     }
     
     *v_out = rsPackColorTo8888(f3);

@@ -1,12 +1,6 @@
-
 package cn.louispeng.imagefilter.sample;
 
-import cn.louispeng.imagefilter.renderscript.ScriptC_BlackWhiteFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_BrickFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_FeatherFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_GradientMapFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_NoiseFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_SaturationModifyFilter;
+import java.util.ArrayList;
 
 import android.app.Activity;
 import android.graphics.Bitmap;
@@ -21,8 +15,16 @@ import android.view.Menu;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.ImageView;
-
-import java.util.ArrayList;
+import cn.louispeng.imagefilter.renderscript.ScriptC_BlackWhiteFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_BrickFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_BrightContrastFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_FeatherFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_GradientMapFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_IllusionFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_InvertFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_NoiseFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_SaturationModifyFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_Test;
 
 public class MainActivity extends Activity {
     private class FilterTask extends AsyncTask<Void, Void, Void> {
@@ -195,8 +197,80 @@ public class MainActivity extends Activity {
 
             long startTime = System.currentTimeMillis();
 
-            script.invoke_setup();
             script.invoke_featherFilter();
+
+            mOutAllocation.copyTo(mBitmapOut);
+
+            Log.d("profile", script.getClass().getSimpleName() + " use " + (System.currentTimeMillis() - startTime));
+        }
+    };
+
+    private class InvertFilter implements IImageFilter {
+        @Override
+        public void process() {
+            mInAllocation = Allocation.createFromBitmap(mRS, mBitmapIn, Allocation.MipmapControl.MIPMAP_NONE,
+                    Allocation.USAGE_SCRIPT);
+            mOutAllocation = Allocation.createFromBitmap(mRS, mBitmapOut, Allocation.MipmapControl.MIPMAP_NONE,
+                    Allocation.USAGE_SCRIPT);
+
+            ScriptC_InvertFilter script = new ScriptC_InvertFilter(mRS, getResources(), R.raw.invertfilter);
+
+            script.set_gIn(mInAllocation);
+            script.set_gOut(mOutAllocation);
+            script.set_gScript(script);
+
+            long startTime = System.currentTimeMillis();
+
+            script.invoke_invertFilter();
+
+            mOutAllocation.copyTo(mBitmapOut);
+
+            Log.d("profile", script.getClass().getSimpleName() + " use " + (System.currentTimeMillis() - startTime));
+        }
+    };
+
+    private class BrightContrastFilter implements IImageFilter {
+        @Override
+        public void process() {
+            mInAllocation = Allocation.createFromBitmap(mRS, mBitmapIn, Allocation.MipmapControl.MIPMAP_NONE,
+                    Allocation.USAGE_SCRIPT);
+            mOutAllocation = Allocation.createFromBitmap(mRS, mBitmapOut, Allocation.MipmapControl.MIPMAP_NONE,
+                    Allocation.USAGE_SCRIPT);
+
+            ScriptC_BrightContrastFilter script = new ScriptC_BrightContrastFilter(mRS, getResources(),
+                    R.raw.brightcontrastfilter);
+
+            script.set_gIn(mInAllocation);
+            script.set_gOut(mOutAllocation);
+            script.set_gScript(script);
+
+            long startTime = System.currentTimeMillis();
+
+            script.invoke_brightContrastFilter();
+
+            mOutAllocation.copyTo(mBitmapOut);
+
+            Log.d("profile", script.getClass().getSimpleName() + " use " + (System.currentTimeMillis() - startTime));
+        }
+    };
+
+    private class IllusionFilter implements IImageFilter {
+        @Override
+        public void process() {
+            mInAllocation = Allocation.createFromBitmap(mRS, mBitmapIn, Allocation.MipmapControl.MIPMAP_NONE,
+                    Allocation.USAGE_SCRIPT);
+            mOutAllocation = Allocation.createFromBitmap(mRS, mBitmapOut, Allocation.MipmapControl.MIPMAP_NONE,
+                    Allocation.USAGE_SCRIPT);
+
+            ScriptC_IllusionFilter script = new ScriptC_IllusionFilter(mRS, getResources(), R.raw.illusionfilter);
+
+            script.set_gIn(mInAllocation);
+            script.set_gOut(mOutAllocation);
+            script.set_gScript(script);
+
+            long startTime = System.currentTimeMillis();
+
+            script.invoke_illusionFilter();
 
             mOutAllocation.copyTo(mBitmapOut);
 
@@ -229,10 +303,10 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mBitmapIn = loadBitmap(R.drawable.image2);
+        mBitmapIn = loadBitmap(R.drawable.image);
         mBitmapOut = Bitmap.createBitmap(mBitmapIn.getWidth(), mBitmapIn.getHeight(), mBitmapIn.getConfig());
 
-        in = (ImageView)findViewById(R.id.displayin);
+        in = (ImageView) findViewById(R.id.displayin);
         in.setImageBitmap(mBitmapIn);
         in.setOnClickListener(new OnClickListener() {
             @Override
@@ -244,7 +318,7 @@ public class MainActivity extends Activity {
             }
         });
 
-        out = (ImageView)findViewById(R.id.displayout);
+        out = (ImageView) findViewById(R.id.displayout);
         out.setImageBitmap(mBitmapOut);
 
         mRS = RenderScript.create(this);
@@ -257,6 +331,13 @@ public class MainActivity extends Activity {
             }
         });
 
+        // Test
+        ScriptC_Test script = new ScriptC_Test(mRS, getResources(), R.raw.test);
+        script.invoke_test();
+
+        mFilterList.add(new IllusionFilter());
+        mFilterList.add(new BrightContrastFilter());
+        mFilterList.add(new InvertFilter());
         mFilterList.add(new FeatherFilter());
         mFilterList.add(new BrickFilter());
         mFilterList.add(new BlackWhiteFilter());
