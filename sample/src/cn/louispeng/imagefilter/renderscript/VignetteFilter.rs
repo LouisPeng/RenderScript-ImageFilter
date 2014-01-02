@@ -6,13 +6,13 @@
 // set from the java SDK level
 rs_allocation gIn;
 rs_allocation gOut;
+
 rs_script gScript;
 
+// Magic factors
+static float _Size = 0.5f;
 
-// magic factor
-const static float _Size = 0.5f;
-
-// static variables
+// Static variables
 static uint32_t _width;
 static uint32_t _height;
 static float _ratio;
@@ -29,8 +29,11 @@ static void setup() {
  	_centerX = _width >> 1;
 	_centerY = _height >> 1;
 	_max = _centerX * _centerX + _centerY * _centerY;
-	_min = _max * (1 - _Size);
+	_min = _max * (1 - _Size) * (1 - _Size);
 	_diff = _max - _min;
+	rsDebug("_max = ", _max);
+	rsDebug("_min = ", _min);
+	rsDebug("_ratio = ", _ratio);
 }
 
 void filter() {
@@ -42,7 +45,7 @@ void filter() {
 void root(const uchar4 *v_in, uchar4 *v_out, const void *usrData, uint32_t x, uint32_t y) {
 	float4 f4 = rsUnpackColor8888(*v_in);	// extract RGBA values, see rs_core.rsh
 	
-	// Calculate distance to center and adapt aspect ratio
+    // Calculate distance to center and adapt aspect ratio
 	int32_t distanceX = _centerX - x;
   	int32_t distanceY = _centerY - y;
   	if (_width > _height){
@@ -52,10 +55,21 @@ void root(const uchar4 *v_in, uchar4 *v_out, const void *usrData, uint32_t x, ui
   	}
   
   	uint32_t distSq = distanceX * distanceX + distanceY * distanceY;
-  	float v =  (float)distSq / _diff;
+  	
+  	float3 f3;
+  	if (distSq > _min) {  		
+	    // Calculate vignette
+	    float v = (float)(_max - distSq) / _diff;
+        v *= v;
+		
+	    // Apply vignette
+	    f3 = f4.rgb * v;
 
-  	float3 f3 = f4.rgb + v;
-  	f3 = FClamp01Float3(f3);
-	
+	    // Check bounds
+	    f3 = FClamp01Float3(f3);
+	} else {
+		f3 = f4.rgb;
+	}
+    
     *v_out = rsPackColorTo8888(f3);
 }

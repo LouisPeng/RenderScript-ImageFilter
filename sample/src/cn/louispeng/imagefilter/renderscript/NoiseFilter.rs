@@ -12,7 +12,7 @@ rs_script gScript;
 // magic factor
 static const float Intensity = 0.2f;
 
-void noiseFilter() {
+void filter() {
     rsForEach(gScript, gIn, gOut, 0, 0);	// for each element of the input allocation,
     										// call root() method on gScript
 }

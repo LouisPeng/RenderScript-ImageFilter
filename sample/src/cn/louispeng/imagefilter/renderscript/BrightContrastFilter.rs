@@ -19,7 +19,7 @@ static const float BrightnessFactor  = 0.25f;
 static const float ContrastFactor  = 0.5f;
 static const float ContrastFactor1  = (1.0f + ContrastFactor) * (1.0f + ContrastFactor);
 
-void brightContrastFilter() {
+void filter() {
     rsForEach(gScript, gIn, gOut, 0, 0);	// for each element of the input allocation,
     										// call root() method on gScript
 }

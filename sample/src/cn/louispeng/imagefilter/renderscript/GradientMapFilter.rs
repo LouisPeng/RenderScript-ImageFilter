@@ -9,7 +9,7 @@ rs_allocation gOut;
 
 rs_script gScript;
 
-void gradientMapFilter() {
+void filter() {
     rsForEach(gScript, gIn, gOut, 0, 0);	// for each element of the input allocation,
     										// call root() method on gScript
 }

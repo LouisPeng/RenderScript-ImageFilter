@@ -17,7 +17,7 @@ static const float SaturationMagicFactor1 = 0.2126f;
 static const float SaturationMagicFactor2 = 0.7152f;
 static const float SaturationMagicFactor3 = 0.0722f;
 
-void saturationModifyFilter() {
+void filter() {
     rsForEach(gScript, gIn, gOut, 0, 0);	// for each element of the input allocation,
     										// call root() method on gScript
 }

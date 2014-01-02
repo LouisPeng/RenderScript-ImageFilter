@@ -31,7 +31,7 @@ static void InitLUTtable() {
 	}
 }
 
-void gammaFilter() {
+void filter() {
 	InitLUTtable();
     rsForEach(gScript, gIn, gOut, 0, 0);	// for each element of the input allocation,
     										// call root() method on gScript

@@ -10,7 +10,7 @@ rs_script gScript;
 // magic factor
 const static float3 gBlackWhiteMult = {0.3f, 0.11f, 0.59f};
 
-void blackWhiteFilter() {
+void filter() {
     rsForEach(gScript, gIn, gOut, 0, 0);	// for each element of the input allocation,
     										// call root() method on gScript
 }

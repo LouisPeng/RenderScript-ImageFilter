@@ -22,7 +22,7 @@ static void setup() {
 	_amount = LIB_PI / ((gAmount >= 1.0f) ? gAmount : 1.0f) ;
 }
 
-void illusionFilter() {
+void filter() {
 	setup();
     rsForEach(gScript, gIn, gOut, 0, 0);	// for each element of the input allocation,
     										// call root() method on gScript

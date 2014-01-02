@@ -22,9 +22,14 @@ import cn.louispeng.imagefilter.renderscript.ScriptC_FeatherFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_GradientMapFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_IllusionFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_InvertFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_LightFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_MirrorFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_MistFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_MosaicFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_NoiseFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_SaturationModifyFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_Test;
+import cn.louispeng.imagefilter.renderscript.ScriptC_VignetteFilter;
 
 public class MainActivity extends Activity {
     private class FilterTask extends AsyncTask<Void, Void, Void> {
@@ -76,7 +81,7 @@ public class MainActivity extends Activity {
 
             long startTime = System.currentTimeMillis();
 
-            script.invoke_saturationModifyFilter();
+            script.invoke_filter();
 
             mOutAllocation.copyTo(mBitmapOut);
 
@@ -101,7 +106,7 @@ public class MainActivity extends Activity {
 
             long startTime = System.currentTimeMillis();
 
-            script.invoke_gradientMapFilter();
+            script.invoke_filter();
 
             mOutAllocation.copyTo(mBitmapOut);
 
@@ -125,7 +130,7 @@ public class MainActivity extends Activity {
 
             long startTime = System.currentTimeMillis();
 
-            script.invoke_noiseFilter();
+            script.invoke_filter();
 
             mOutAllocation.copyTo(mBitmapOut);
 
@@ -149,7 +154,7 @@ public class MainActivity extends Activity {
 
             long startTime = System.currentTimeMillis();
 
-            script.invoke_blackWhiteFilter();
+            script.invoke_filter();
 
             mOutAllocation.copyTo(mBitmapOut);
 
@@ -173,7 +178,7 @@ public class MainActivity extends Activity {
 
             long startTime = System.currentTimeMillis();
 
-            script.invoke_brickFilter();
+            script.invoke_filter();
 
             mOutAllocation.copyTo(mBitmapOut);
 
@@ -197,7 +202,7 @@ public class MainActivity extends Activity {
 
             long startTime = System.currentTimeMillis();
 
-            script.invoke_featherFilter();
+            script.invoke_filter();
 
             mOutAllocation.copyTo(mBitmapOut);
 
@@ -221,7 +226,7 @@ public class MainActivity extends Activity {
 
             long startTime = System.currentTimeMillis();
 
-            script.invoke_invertFilter();
+            script.invoke_filter();
 
             mOutAllocation.copyTo(mBitmapOut);
 
@@ -246,7 +251,7 @@ public class MainActivity extends Activity {
 
             long startTime = System.currentTimeMillis();
 
-            script.invoke_brightContrastFilter();
+            script.invoke_filter();
 
             mOutAllocation.copyTo(mBitmapOut);
 
@@ -270,7 +275,126 @@ public class MainActivity extends Activity {
 
             long startTime = System.currentTimeMillis();
 
-            script.invoke_illusionFilter();
+            script.invoke_filter();
+
+            mOutAllocation.copyTo(mBitmapOut);
+
+            Log.d("profile", script.getClass().getSimpleName() + " use " + (System.currentTimeMillis() - startTime));
+        }
+    };
+
+    private class LightFilter implements IImageFilter {
+        @Override
+        public void process() {
+            mInAllocation = Allocation.createFromBitmap(mRS, mBitmapIn, Allocation.MipmapControl.MIPMAP_NONE,
+                    Allocation.USAGE_SCRIPT);
+            mOutAllocation = Allocation.createFromBitmap(mRS, mBitmapOut, Allocation.MipmapControl.MIPMAP_NONE,
+                    Allocation.USAGE_SCRIPT);
+
+            ScriptC_LightFilter script = new ScriptC_LightFilter(mRS, getResources(), R.raw.lightfilter);
+
+            script.set_gIn(mInAllocation);
+            script.set_gOut(mOutAllocation);
+            script.set_gScript(script);
+
+            long startTime = System.currentTimeMillis();
+
+            script.invoke_filter();
+
+            mOutAllocation.copyTo(mBitmapOut);
+
+            Log.d("profile", script.getClass().getSimpleName() + " use " + (System.currentTimeMillis() - startTime));
+        }
+    };
+
+    private class MosaicFilter implements IImageFilter {
+        @Override
+        public void process() {
+            mInAllocation = Allocation.createFromBitmap(mRS, mBitmapIn, Allocation.MipmapControl.MIPMAP_NONE,
+                    Allocation.USAGE_SCRIPT);
+            mOutAllocation = Allocation.createFromBitmap(mRS, mBitmapOut, Allocation.MipmapControl.MIPMAP_NONE,
+                    Allocation.USAGE_SCRIPT);
+
+            ScriptC_MosaicFilter script = new ScriptC_MosaicFilter(mRS, getResources(), R.raw.mosaicfilter);
+
+            script.set_gIn(mInAllocation);
+            script.set_gOut(mOutAllocation);
+            script.set_gScript(script);
+
+            long startTime = System.currentTimeMillis();
+            script.invoke_filter();
+
+            mOutAllocation.copyTo(mBitmapOut);
+
+            Log.d("profile", script.getClass().getSimpleName() + " use " + (System.currentTimeMillis() - startTime));
+        }
+    };
+
+    private class MirrorFilter implements IImageFilter {
+        @Override
+        public void process() {
+            mInAllocation = Allocation.createFromBitmap(mRS, mBitmapIn, Allocation.MipmapControl.MIPMAP_NONE,
+                    Allocation.USAGE_SCRIPT);
+            mOutAllocation = Allocation.createFromBitmap(mRS, mBitmapOut, Allocation.MipmapControl.MIPMAP_NONE,
+                    Allocation.USAGE_SCRIPT);
+
+            ScriptC_MirrorFilter script = new ScriptC_MirrorFilter(mRS, getResources(), R.raw.mirrorfilter);
+
+            script.set_gIn(mInAllocation);
+            script.set_gOut(mOutAllocation);
+            script.set_gScript(script);
+
+            long startTime = System.currentTimeMillis();
+
+            script.invoke_filter();
+
+            mOutAllocation.copyTo(mBitmapOut);
+
+            Log.d("profile", script.getClass().getSimpleName() + " use " + (System.currentTimeMillis() - startTime));
+        }
+    };
+
+    private class VignetteFilter implements IImageFilter {
+        @Override
+        public void process() {
+            mInAllocation = Allocation.createFromBitmap(mRS, mBitmapIn, Allocation.MipmapControl.MIPMAP_NONE,
+                    Allocation.USAGE_SCRIPT);
+            mOutAllocation = Allocation.createFromBitmap(mRS, mBitmapOut, Allocation.MipmapControl.MIPMAP_NONE,
+                    Allocation.USAGE_SCRIPT);
+
+            ScriptC_VignetteFilter script = new ScriptC_VignetteFilter(mRS, getResources(), R.raw.vignettefilter);
+
+            script.set_gIn(mInAllocation);
+            script.set_gOut(mOutAllocation);
+            script.set_gScript(script);
+
+            long startTime = System.currentTimeMillis();
+
+            script.invoke_filter();
+
+            mOutAllocation.copyTo(mBitmapOut);
+
+            Log.d("profile", script.getClass().getSimpleName() + " use " + (System.currentTimeMillis() - startTime));
+        }
+    };
+
+    private class MistFilter implements IImageFilter {
+        @Override
+        public void process() {
+            mInAllocation = Allocation.createFromBitmap(mRS, mBitmapIn, Allocation.MipmapControl.MIPMAP_NONE,
+                    Allocation.USAGE_SCRIPT);
+            mOutAllocation = Allocation.createFromBitmap(mRS, mBitmapOut, Allocation.MipmapControl.MIPMAP_NONE,
+                    Allocation.USAGE_SCRIPT);
+
+            ScriptC_MistFilter script = new ScriptC_MistFilter(mRS, getResources(), R.raw.mistfilter);
+
+            script.set_gIn(mInAllocation);
+            script.set_gOut(mOutAllocation);
+            script.set_gScript(script);
+
+            long startTime = System.currentTimeMillis();
+
+            script.invoke_filter();
 
             mOutAllocation.copyTo(mBitmapOut);
 
@@ -303,7 +427,7 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mBitmapIn = loadBitmap(R.drawable.image);
+        mBitmapIn = loadBitmap(R.drawable.image2);
         mBitmapOut = Bitmap.createBitmap(mBitmapIn.getWidth(), mBitmapIn.getHeight(), mBitmapIn.getConfig());
 
         in = (ImageView) findViewById(R.id.displayin);
@@ -332,9 +456,19 @@ public class MainActivity extends Activity {
         });
 
         // Test
-        ScriptC_Test script = new ScriptC_Test(mRS, getResources(), R.raw.test);
-        script.invoke_test();
+        new Thread("Test thread") {
+            @Override
+            public void run() {
+                ScriptC_Test script = new ScriptC_Test(mRS, getResources(), R.raw.test);
+                script.invoke_test();
+            }
+        }.start();
 
+        mFilterList.add(new MistFilter());
+        mFilterList.add(new VignetteFilter());
+        mFilterList.add(new MirrorFilter());
+        mFilterList.add(new MosaicFilter());
+        mFilterList.add(new LightFilter());
         mFilterList.add(new IllusionFilter());
         mFilterList.add(new BrightContrastFilter());
         mFilterList.add(new InvertFilter());
