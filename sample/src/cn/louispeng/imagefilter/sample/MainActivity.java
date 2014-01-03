@@ -1,6 +1,24 @@
+
 package cn.louispeng.imagefilter.sample;
 
-import java.util.ArrayList;
+import cn.louispeng.imagefilter.renderscript.ScriptC_BlackWhiteFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_BrickFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_BrightContrastFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_CleanGlassFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_FeatherFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_GradientMapFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_IllusionFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_InvertFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_LightFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_MirrorFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_MistFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_MosaicFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_NoiseFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_OilPaintFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_RaiseFrameFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_SaturationModifyFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_Test;
+import cn.louispeng.imagefilter.renderscript.ScriptC_VignetteFilter;
 
 import android.app.Activity;
 import android.graphics.Bitmap;
@@ -15,21 +33,8 @@ import android.view.Menu;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.ImageView;
-import cn.louispeng.imagefilter.renderscript.ScriptC_BlackWhiteFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_BrickFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_BrightContrastFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_FeatherFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_GradientMapFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_IllusionFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_InvertFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_LightFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_MirrorFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_MistFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_MosaicFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_NoiseFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_SaturationModifyFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_Test;
-import cn.louispeng.imagefilter.renderscript.ScriptC_VignetteFilter;
+
+import java.util.ArrayList;
 
 public class MainActivity extends Activity {
     private class FilterTask extends AsyncTask<Void, Void, Void> {
@@ -402,6 +407,78 @@ public class MainActivity extends Activity {
         }
     };
 
+    private class CleanGlassFilter implements IImageFilter {
+        @Override
+        public void process() {
+            mInAllocation = Allocation.createFromBitmap(mRS, mBitmapIn, Allocation.MipmapControl.MIPMAP_NONE,
+                    Allocation.USAGE_SCRIPT);
+            mOutAllocation = Allocation.createFromBitmap(mRS, mBitmapOut, Allocation.MipmapControl.MIPMAP_NONE,
+                    Allocation.USAGE_SCRIPT);
+
+            ScriptC_CleanGlassFilter script = new ScriptC_CleanGlassFilter(mRS, getResources(), R.raw.cleanglassfilter);
+
+            script.set_gIn(mInAllocation);
+            script.set_gOut(mOutAllocation);
+            script.set_gScript(script);
+
+            long startTime = System.currentTimeMillis();
+
+            script.invoke_filter();
+
+            mOutAllocation.copyTo(mBitmapOut);
+
+            Log.d("profile", script.getClass().getSimpleName() + " use " + (System.currentTimeMillis() - startTime));
+        }
+    };
+    
+    private class OilPaintFilter implements IImageFilter {
+        @Override
+        public void process() {
+            mInAllocation = Allocation.createFromBitmap(mRS, mBitmapIn, Allocation.MipmapControl.MIPMAP_NONE,
+                    Allocation.USAGE_SCRIPT);
+            mOutAllocation = Allocation.createFromBitmap(mRS, mBitmapOut, Allocation.MipmapControl.MIPMAP_NONE,
+                    Allocation.USAGE_SCRIPT);
+
+            ScriptC_OilPaintFilter script = new ScriptC_OilPaintFilter(mRS, getResources(), R.raw.oilpaintfilter);
+
+            script.set_gIn(mInAllocation);
+            script.set_gOut(mOutAllocation);
+            script.set_gScript(script);
+
+            long startTime = System.currentTimeMillis();
+
+            script.invoke_filter();
+
+            mOutAllocation.copyTo(mBitmapOut);
+
+            Log.d("profile", script.getClass().getSimpleName() + " use " + (System.currentTimeMillis() - startTime));
+        }
+    };
+    
+    private class RaiseFrameFilter implements IImageFilter {
+        @Override
+        public void process() {
+            mInAllocation = Allocation.createFromBitmap(mRS, mBitmapIn, Allocation.MipmapControl.MIPMAP_NONE,
+                    Allocation.USAGE_SCRIPT);
+            mOutAllocation = Allocation.createFromBitmap(mRS, mBitmapOut, Allocation.MipmapControl.MIPMAP_NONE,
+                    Allocation.USAGE_SCRIPT);
+
+            ScriptC_RaiseFrameFilter script = new ScriptC_RaiseFrameFilter(mRS, getResources(), R.raw.raiseframefilter);
+
+            script.set_gIn(mInAllocation);
+            script.set_gOut(mOutAllocation);
+            script.set_gScript(script);
+
+            long startTime = System.currentTimeMillis();
+
+            script.invoke_filter();
+
+            mOutAllocation.copyTo(mBitmapOut);
+
+            Log.d("profile", script.getClass().getSimpleName() + " use " + (System.currentTimeMillis() - startTime));
+        }
+    };
+
     private final ArrayList<IImageFilter> mFilterList = new ArrayList<IImageFilter>();
 
     private ImageView in;
@@ -430,7 +507,7 @@ public class MainActivity extends Activity {
         mBitmapIn = loadBitmap(R.drawable.image2);
         mBitmapOut = Bitmap.createBitmap(mBitmapIn.getWidth(), mBitmapIn.getHeight(), mBitmapIn.getConfig());
 
-        in = (ImageView) findViewById(R.id.displayin);
+        in = (ImageView)findViewById(R.id.displayin);
         in.setImageBitmap(mBitmapIn);
         in.setOnClickListener(new OnClickListener() {
             @Override
@@ -442,7 +519,7 @@ public class MainActivity extends Activity {
             }
         });
 
-        out = (ImageView) findViewById(R.id.displayout);
+        out = (ImageView)findViewById(R.id.displayout);
         out.setImageBitmap(mBitmapOut);
 
         mRS = RenderScript.create(this);
@@ -464,6 +541,9 @@ public class MainActivity extends Activity {
             }
         }.start();
 
+        mFilterList.add(new RaiseFrameFilter());
+        mFilterList.add(new OilPaintFilter());
+        mFilterList.add(new CleanGlassFilter());
         mFilterList.add(new MistFilter());
         mFilterList.add(new VignetteFilter());
         mFilterList.add(new MirrorFilter());

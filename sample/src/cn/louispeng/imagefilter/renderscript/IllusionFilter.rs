@@ -42,8 +42,7 @@ void root(const uchar4 *v_in, uchar4 *v_out, const void *usrData, uint32_t x, ui
 	xx = FClamp(xx, 0, _width - 1);
 	yy = FClamp(yy, 0, _height - 1);
 
-	const uchar4* theF4Point = rsGetElementAt(gIn, xx, yy);
-	float4 theF4 = rsUnpackColor8888(*theF4Point);
+	float4 theF4 = rsUnpackColor8888(*(const uchar4*)rsGetElementAt(gIn, xx, yy));
 
     float3 f3;
     f3.r = f4.r + radius * (theF4.r - f4.r);
