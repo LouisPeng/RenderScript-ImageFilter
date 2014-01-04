@@ -5,6 +5,7 @@ import cn.louispeng.imagefilter.renderscript.ScriptC_BlackWhiteFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_BrickFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_BrightContrastFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_CleanGlassFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_EdgeFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_FeatherFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_GradientMapFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_IllusionFilter;
@@ -15,7 +16,9 @@ import cn.louispeng.imagefilter.renderscript.ScriptC_MistFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_MosaicFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_NoiseFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_OilPaintFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_PaintBorderFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_RaiseFrameFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_ReliefFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_SaturationModifyFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_Test;
 import cn.louispeng.imagefilter.renderscript.ScriptC_VignetteFilter;
@@ -26,6 +29,7 @@ import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.renderscript.Allocation;
+import android.renderscript.Float3;
 import android.renderscript.RenderScript;
 import android.renderscript.RenderScript.RSErrorHandler;
 import android.util.Log;
@@ -430,7 +434,7 @@ public class MainActivity extends Activity {
             Log.d("profile", script.getClass().getSimpleName() + " use " + (System.currentTimeMillis() - startTime));
         }
     };
-    
+
     private class OilPaintFilter implements IImageFilter {
         @Override
         public void process() {
@@ -454,7 +458,7 @@ public class MainActivity extends Activity {
             Log.d("profile", script.getClass().getSimpleName() + " use " + (System.currentTimeMillis() - startTime));
         }
     };
-    
+
     private class RaiseFrameFilter implements IImageFilter {
         @Override
         public void process() {
@@ -468,6 +472,80 @@ public class MainActivity extends Activity {
             script.set_gIn(mInAllocation);
             script.set_gOut(mOutAllocation);
             script.set_gScript(script);
+
+            long startTime = System.currentTimeMillis();
+
+            script.invoke_filter();
+
+            mOutAllocation.copyTo(mBitmapOut);
+
+            Log.d("profile", script.getClass().getSimpleName() + " use " + (System.currentTimeMillis() - startTime));
+        }
+    };
+
+    private class EdgeFilter implements IImageFilter {
+        @Override
+        public void process() {
+            mInAllocation = Allocation.createFromBitmap(mRS, mBitmapIn, Allocation.MipmapControl.MIPMAP_NONE,
+                    Allocation.USAGE_SCRIPT);
+            mOutAllocation = Allocation.createFromBitmap(mRS, mBitmapOut, Allocation.MipmapControl.MIPMAP_NONE,
+                    Allocation.USAGE_SCRIPT);
+
+            ScriptC_EdgeFilter script = new ScriptC_EdgeFilter(mRS, getResources(), R.raw.edgefilter);
+
+            script.set_gIn(mInAllocation);
+            script.set_gOut(mOutAllocation);
+            script.set_gScript(script);
+
+            long startTime = System.currentTimeMillis();
+
+            script.invoke_filter();
+
+            mOutAllocation.copyTo(mBitmapOut);
+
+            Log.d("profile", script.getClass().getSimpleName() + " use " + (System.currentTimeMillis() - startTime));
+        }
+    };
+
+    private class ReliefFilter implements IImageFilter {
+        @Override
+        public void process() {
+            mInAllocation = Allocation.createFromBitmap(mRS, mBitmapIn, Allocation.MipmapControl.MIPMAP_NONE,
+                    Allocation.USAGE_SCRIPT);
+            mOutAllocation = Allocation.createFromBitmap(mRS, mBitmapOut, Allocation.MipmapControl.MIPMAP_NONE,
+                    Allocation.USAGE_SCRIPT);
+
+            ScriptC_ReliefFilter script = new ScriptC_ReliefFilter(mRS, getResources(), R.raw.relieffilter);
+
+            script.set_gIn(mInAllocation);
+            script.set_gOut(mOutAllocation);
+            script.set_gScript(script);
+
+            long startTime = System.currentTimeMillis();
+
+            script.invoke_filter();
+
+            mOutAllocation.copyTo(mBitmapOut);
+
+            Log.d("profile", script.getClass().getSimpleName() + " use " + (System.currentTimeMillis() - startTime));
+        }
+    };
+
+    private class PaintBorderFilter implements IImageFilter {
+        @Override
+        public void process() {
+            mInAllocation = Allocation.createFromBitmap(mRS, mBitmapIn, Allocation.MipmapControl.MIPMAP_NONE,
+                    Allocation.USAGE_SCRIPT);
+            mOutAllocation = Allocation.createFromBitmap(mRS, mBitmapOut, Allocation.MipmapControl.MIPMAP_NONE,
+                    Allocation.USAGE_SCRIPT);
+
+            ScriptC_PaintBorderFilter script = new ScriptC_PaintBorderFilter(mRS, getResources(),
+                    R.raw.paintborderfilter);
+
+            script.set_gIn(mInAllocation);
+            script.set_gOut(mOutAllocation);
+            script.set_gScript(script);
+            script.set_gPaintBorderColor(new Float3(1.0f, 0, 0));
 
             long startTime = System.currentTimeMillis();
 
@@ -541,6 +619,9 @@ public class MainActivity extends Activity {
             }
         }.start();
 
+        mFilterList.add(new PaintBorderFilter());
+        mFilterList.add(new ReliefFilter());
+        mFilterList.add(new EdgeFilter());
         mFilterList.add(new RaiseFrameFilter());
         mFilterList.add(new OilPaintFilter());
         mFilterList.add(new CleanGlassFilter());

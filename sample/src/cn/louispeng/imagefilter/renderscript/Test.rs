@@ -1,6 +1,8 @@
 #pragma version(1)
 #pragma rs java_package_name(cn.louispeng.imagefilter.renderscript)
 
+int *intArrayPointer;
+
 static void print(float3 f3) {
 	rsDebug("f3 = ", f3);
 }
@@ -48,5 +50,12 @@ void test() {
 		f3 = f3 * mult3;
 	    rsDebug("f3 = f3 * mult3", 0);
 	    print(f3);
+    }
+    {
+    	if (0 != intArrayPointer) {
+    		for (int index = 0; index < 100; index++) {
+    			intArrayPointer[index] = index;
+			}
+    	}
     }
 }
