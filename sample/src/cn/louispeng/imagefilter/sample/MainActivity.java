@@ -1,10 +1,28 @@
-
 package cn.louispeng.imagefilter.sample;
 
+import java.util.ArrayList;
+
+import android.app.Activity;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.os.AsyncTask;
+import android.os.Bundle;
+import android.renderscript.Allocation;
+import android.renderscript.Float3;
+import android.renderscript.RenderScript;
+import android.renderscript.RenderScript.RSErrorHandler;
+import android.util.Log;
+import android.view.Menu;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.ImageView;
 import cn.louispeng.imagefilter.renderscript.ScriptC_BlackWhiteFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_BlindFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_BrickFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_BrightContrastFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_CleanGlassFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_ColorQuantizeFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_ColorToneFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_EdgeFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_FeatherFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_GradientMapFilter;
@@ -21,24 +39,8 @@ import cn.louispeng.imagefilter.renderscript.ScriptC_RaiseFrameFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_ReliefFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_SaturationModifyFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_Test;
+import cn.louispeng.imagefilter.renderscript.ScriptC_ThreeDGridFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_VignetteFilter;
-
-import android.app.Activity;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.os.AsyncTask;
-import android.os.Bundle;
-import android.renderscript.Allocation;
-import android.renderscript.Float3;
-import android.renderscript.RenderScript;
-import android.renderscript.RenderScript.RSErrorHandler;
-import android.util.Log;
-import android.view.Menu;
-import android.view.View;
-import android.view.View.OnClickListener;
-import android.widget.ImageView;
-
-import java.util.ArrayList;
 
 public class MainActivity extends Activity {
     private class FilterTask extends AsyncTask<Void, Void, Void> {
@@ -557,6 +559,141 @@ public class MainActivity extends Activity {
         }
     };
 
+    private class BlindFilter implements IImageFilter {
+        private final Float3 mBlindColor;
+        private final int mIsHorizontal;
+
+        public BlindFilter(Float3 blindColor, boolean isHorizontal) {
+            mBlindColor = blindColor;
+            mIsHorizontal = isHorizontal ? 1 : 0;
+        }
+
+        @Override
+        public void process() {
+            mInAllocation = Allocation.createFromBitmap(mRS, mBitmapIn, Allocation.MipmapControl.MIPMAP_NONE,
+                    Allocation.USAGE_SCRIPT);
+            mOutAllocation = Allocation.createFromBitmap(mRS, mBitmapOut, Allocation.MipmapControl.MIPMAP_NONE,
+                    Allocation.USAGE_SCRIPT);
+
+            ScriptC_BlindFilter script = new ScriptC_BlindFilter(mRS, getResources(), R.raw.blindfilter);
+
+            script.set_gIn(mInAllocation);
+            script.set_gOut(mOutAllocation);
+            script.set_gScript(script);
+            script.set_gBlindColor(mBlindColor);
+            script.set_gIsHorizontal(mIsHorizontal);
+            script.set_gWidth(96);
+            script.set_gOpacity(1.0f);
+
+            long startTime = System.currentTimeMillis();
+
+            script.invoke_filter();
+
+            mOutAllocation.copyTo(mBitmapOut);
+
+            if (mIsHorizontal == 1) {
+                Log.d("profile", script.getClass().getSimpleName() + "(Horizontal) use "
+                        + (System.currentTimeMillis() - startTime));
+            } else {
+                Log.d("profile", script.getClass().getSimpleName() + "(Vertical) use "
+                        + (System.currentTimeMillis() - startTime));
+            }
+        }
+    };
+
+    private class ColorQuantizeFilter implements IImageFilter {
+        @Override
+        public void process() {
+            mInAllocation = Allocation.createFromBitmap(mRS, mBitmapIn, Allocation.MipmapControl.MIPMAP_NONE,
+                    Allocation.USAGE_SCRIPT);
+            mOutAllocation = Allocation.createFromBitmap(mRS, mBitmapOut, Allocation.MipmapControl.MIPMAP_NONE,
+                    Allocation.USAGE_SCRIPT);
+
+            ScriptC_ColorQuantizeFilter script = new ScriptC_ColorQuantizeFilter(mRS, getResources(),
+                    R.raw.colorquantizefilter);
+
+            script.set_gIn(mInAllocation);
+            script.set_gOut(mOutAllocation);
+            script.set_gScript(script);
+
+            long startTime = System.currentTimeMillis();
+
+            script.invoke_filter();
+
+            mOutAllocation.copyTo(mBitmapOut);
+
+            Log.d("profile", script.getClass().getSimpleName() + " use " + (System.currentTimeMillis() - startTime));
+        }
+    };
+
+    private class ColorToneFilter implements IImageFilter {
+        private final Float3 mRGB;
+        private final float mSaturation;
+
+        public ColorToneFilter(Float3 rgb, float saturation) {
+            mRGB = rgb;
+            mSaturation = saturation;
+        }
+
+        @Override
+        public void process() {
+            mInAllocation = Allocation.createFromBitmap(mRS, mBitmapIn, Allocation.MipmapControl.MIPMAP_NONE,
+                    Allocation.USAGE_SCRIPT);
+            mOutAllocation = Allocation.createFromBitmap(mRS, mBitmapOut, Allocation.MipmapControl.MIPMAP_NONE,
+                    Allocation.USAGE_SCRIPT);
+
+            ScriptC_ColorToneFilter script = new ScriptC_ColorToneFilter(mRS, getResources(), R.raw.colortonefilter);
+
+            script.set_gIn(mInAllocation);
+            script.set_gOut(mOutAllocation);
+            script.set_gScript(script);
+            script.set_gTone(mRGB);
+            script.set_gSaturation(mSaturation);
+
+            long startTime = System.currentTimeMillis();
+
+            script.invoke_filter();
+
+            mOutAllocation.copyTo(mBitmapOut);
+
+            Log.d("profile", script.getClass().getSimpleName() + " use " + (System.currentTimeMillis() - startTime));
+        }
+    };
+
+    private class ThreeDGridFilter implements IImageFilter {
+        private final int mSize;
+        private final float mDepth;
+
+        public ThreeDGridFilter(int size, float depth) {
+            mSize = size;
+            mDepth = depth;
+        }
+
+        @Override
+        public void process() {
+            mInAllocation = Allocation.createFromBitmap(mRS, mBitmapIn, Allocation.MipmapControl.MIPMAP_NONE,
+                    Allocation.USAGE_SCRIPT);
+            mOutAllocation = Allocation.createFromBitmap(mRS, mBitmapOut, Allocation.MipmapControl.MIPMAP_NONE,
+                    Allocation.USAGE_SCRIPT);
+
+            ScriptC_ThreeDGridFilter script = new ScriptC_ThreeDGridFilter(mRS, getResources(), R.raw.threedgridfilter);
+
+            script.set_gIn(mInAllocation);
+            script.set_gOut(mOutAllocation);
+            script.set_gScript(script);
+            script.set_gSize(mSize);
+            script.set_gDepth(mDepth);
+
+            long startTime = System.currentTimeMillis();
+
+            script.invoke_filter();
+
+            mOutAllocation.copyTo(mBitmapOut);
+
+            Log.d("profile", script.getClass().getSimpleName() + " use " + (System.currentTimeMillis() - startTime));
+        }
+    };
+
     private final ArrayList<IImageFilter> mFilterList = new ArrayList<IImageFilter>();
 
     private ImageView in;
@@ -585,7 +722,7 @@ public class MainActivity extends Activity {
         mBitmapIn = loadBitmap(R.drawable.image2);
         mBitmapOut = Bitmap.createBitmap(mBitmapIn.getWidth(), mBitmapIn.getHeight(), mBitmapIn.getConfig());
 
-        in = (ImageView)findViewById(R.id.displayin);
+        in = (ImageView) findViewById(R.id.displayin);
         in.setImageBitmap(mBitmapIn);
         in.setOnClickListener(new OnClickListener() {
             @Override
@@ -597,7 +734,7 @@ public class MainActivity extends Activity {
             }
         });
 
-        out = (ImageView)findViewById(R.id.displayout);
+        out = (ImageView) findViewById(R.id.displayout);
         out.setImageBitmap(mBitmapOut);
 
         mRS = RenderScript.create(this);
@@ -619,7 +756,12 @@ public class MainActivity extends Activity {
             }
         }.start();
 
-        mFilterList.add(new PaintBorderFilter());
+        mFilterList.add(new ThreeDGridFilter(16, 100.0f / 255.0f));
+        mFilterList.add(new ColorToneFilter(new Float3(0.12941176470588f, 0.65882352941176f, 0.99607843137255f),
+                0.75294117647059f));
+        mFilterList.add(new ColorQuantizeFilter());
+        mFilterList.add(new BlindFilter(new Float3(0, 0, 0), true));
+        mFilterList.add(new BlindFilter(new Float3(1.0f, 1.0f, 1.0f), false));
         mFilterList.add(new ReliefFilter());
         mFilterList.add(new EdgeFilter());
         mFilterList.add(new RaiseFrameFilter());

@@ -54,7 +54,7 @@ void root(const uchar4 *v_in, uchar4 *v_out, const void *usrData, uint32_t x, ui
   	float3 f3;
   	float4 theF4;
   	if (distSq > _min) {
-	    int k = rsRand(1, 123456);
+	    int32_t k = rsRand(1, 123456);
         
         uint32_t theX = x + k % 19;
         uint32_t theY = y + k % 19;

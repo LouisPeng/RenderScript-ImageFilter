@@ -30,7 +30,7 @@ void filter() {
 void root(const uchar4 *v_in, uchar4 *v_out, const void *usrData, uint32_t x, uint32_t y) {
 	float4 f4 = rsUnpackColor8888(*v_in);	// extract RGBA values, see rs_core.rsh
 	
-	int pos = rsRand(1, 10000) % Model;
+	int32_t pos = rsRand(1, 10000) % Model;
     int32_t theX = (x + pos) < _width ? (x + pos) : ((int)x - pos) >= 0 ? (x - pos) : x;
     int32_t theY = (y + pos) < _height ? (y + pos) : ((int)y - pos) >= 0 ? (y - pos) : y;
     

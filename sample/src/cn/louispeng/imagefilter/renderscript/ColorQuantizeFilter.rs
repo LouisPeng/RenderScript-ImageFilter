@@ -10,15 +10,12 @@ rs_allocation gOut;
 rs_script gScript;
 
 // Magic factors
-static uint32_t MosiacSize = 40;
+static const float Levels = 5.0f;
+static const float Mult = 0.003921569f;
 
 // Static variables
-static uint32_t _width;
-static uint32_t _height;
 
 static void setup() {
-	_width = rsAllocationGetDimX(gIn);
-	_height = rsAllocationGetDimY(gIn);
 }
 
 void filter() {
@@ -30,19 +27,10 @@ void filter() {
 void root(const uchar4 *v_in, uchar4 *v_out, const void *usrData, uint32_t x, uint32_t y) {
 	float4 f4 = rsUnpackColor8888(*v_in);	// extract RGBA values, see rs_core.rsh
 	
-    float3 f3;
-    
-    int32_t random = rsRand(1, 123456);
-  	int32_t theX = x + random % 19;
-  	int32_t theY = y + random % 19;
-  	if(theX >= _width) {
-		theX = _width - 1;   				  
-  	}
-  	if(theY >= _height) {
-		theY = _height - 1;   				  
-  	}
-  	
-  	float4 theF4 = rsUnpackColor8888(*(const uchar4*)rsGetElementAt(gIn, theX, theY));
-    
-    *v_out = rsPackColorTo8888(theF4);
+	float R = (((int) (f4.r * 255.0f * 0.003921569f * Levels)) / Levels) * 255.0f;
+	float G = (((int) (f4.g * 255.0f * 0.003921569f * Levels)) / Levels) * 255.0f;
+	float B = (((int) (f4.b * 255.0f * 0.003921569f * Levels)) / Levels) * 255.0f;
+        
+    float3 f3 = {R / 255.0f, G / 255.0f, B / 255.0f};
+    *v_out = rsPackColorTo8888(f3);
 }

@@ -6,9 +6,10 @@
 // set from the java SDK level
 rs_allocation gIn;
 rs_allocation gOut;
-
 rs_script gScript;
+
 float3 gPaintBorderColor;
+// Should be in the range [0, 10].
 float gSize = 1.0f;
 
 // Magic factors
@@ -56,7 +57,7 @@ void root(const uchar4 *v_in, uchar4 *v_out, const void *usrData, uint32_t x, ui
 	
 	float3 f3 = ((float) distSq / _diff) * gPaintBorderColor.rgb;
 	
-	// FIXME not yet finish	
+	// TODO not yet finish	
     
     *v_out = rsPackColorTo8888(f3);
 }

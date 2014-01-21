@@ -37,6 +37,7 @@ void filter() {
 }
 
 static float3 ProcessColor(float4 f4, uint32_t x, uint32_t y) {
+	// TODO not yet finish
 	float3 rgb;
 	return rgb;
 }
