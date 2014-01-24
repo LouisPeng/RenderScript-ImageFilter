@@ -1,6 +1,8 @@
 #pragma version(1)
 #pragma rs java_package_name(cn.louispeng.imagefilter.renderscript)
 
+// 参数化边缘检测效果
+
 #include "Clamp.rsh"
 #include "YUV.rsh"
 

@@ -8,9 +8,13 @@ import cn.louispeng.imagefilter.renderscript.ScriptC_BrightContrastFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_CleanGlassFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_ColorQuantizeFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_ColorToneFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_ConvolutionFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_EdgeFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_FeatherFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_FillPatternFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_GradientMapFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_GrayscaleFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_HistogramEqualFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_IllusionFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_InvertFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_LightFilter;
@@ -23,6 +27,7 @@ import cn.louispeng.imagefilter.renderscript.ScriptC_PaintBorderFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_RaiseFrameFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_ReliefFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_SaturationModifyFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_SharpFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_Test;
 import cn.louispeng.imagefilter.renderscript.ScriptC_ThreeDGridFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_VignetteFilter;
@@ -33,6 +38,7 @@ import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.renderscript.Allocation;
+import android.renderscript.Element;
 import android.renderscript.Float3;
 import android.renderscript.RenderScript;
 import android.renderscript.ScriptC;
@@ -84,7 +90,7 @@ public class MainActivity extends Activity {
 
         protected ScriptC mScript;
 
-        protected void _preProcess() {
+        protected void preProcess() {
             mRS = RenderScript.create(getApplicationContext());
             mInAllocation = Allocation.createFromBitmap(mRS, mBitmapIn, Allocation.MipmapControl.MIPMAP_NONE,
                     Allocation.USAGE_SCRIPT);
@@ -92,17 +98,25 @@ public class MainActivity extends Activity {
                     Allocation.USAGE_SCRIPT);
         }
 
+        protected void _preProcess() {
+        }
+
         protected abstract void _process();
 
+        protected void _postProcess() {
+        }
+
         public void process() {
-            _preProcess();
+            preProcess();
             startTime = System.currentTimeMillis();
+            _preProcess();
             _process();
             Log.d("profile", mScript.getClass().getSimpleName() + " use " + (System.currentTimeMillis() - startTime));
             _postProcess();
+            postProcess();
         }
 
-        protected void _postProcess() {
+        protected void postProcess() {
             mOutAllocation.copyTo(mBitmapOut);
             mScript.destroy();
             mScript = null;
@@ -493,6 +507,122 @@ public class MainActivity extends Activity {
         }
     };
 
+    private class ConvolutionFilter extends IImageFilter {
+        @Override
+        protected void _process() {
+            ScriptC_ConvolutionFilter script = new ScriptC_ConvolutionFilter(mRS, getResources(),
+                    R.raw.convolutionfilter);
+
+            script.set_gIn(mInAllocation);
+            script.set_gOut(mOutAllocation);
+            script.set_gScript(script);
+
+            script.invoke_filter();
+            mScript = script;
+        }
+    };
+
+    private class FillPatternFilter extends IImageFilter {
+        private Bitmap patternBitmap;
+
+        private Allocation patternAllocation;
+
+        @Override
+        protected void _preProcess() {
+            patternBitmap = loadBitmap(R.drawable.image);
+            patternAllocation = Allocation.createFromBitmap(mRS, patternBitmap, Allocation.MipmapControl.MIPMAP_NONE,
+                    Allocation.USAGE_SCRIPT);
+        }
+
+        @Override
+        protected void _postProcess() {
+            patternAllocation.destroy();
+            patternAllocation = null;
+            patternBitmap.recycle();
+            patternBitmap = null;
+        }
+
+        @Override
+        protected void _process() {
+            ScriptC_FillPatternFilter script = new ScriptC_FillPatternFilter(mRS, getResources(),
+                    R.raw.fillpatternfilter);
+
+            script.set_gIn(mInAllocation);
+            script.set_gPattern(patternAllocation);
+            script.set_gOut(mOutAllocation);
+            script.set_gScript(script);
+
+            script.invoke_filter();
+            mScript = script;
+        }
+    };
+
+    private class SharpFilter extends IImageFilter {
+        private final float mStep;
+
+        public SharpFilter(float step) {
+            mStep = step;
+        }
+
+        @Override
+        protected void _process() {
+            ScriptC_SharpFilter script = new ScriptC_SharpFilter(mRS, getResources(), R.raw.sharpfilter);
+
+            script.set_gIn(mInAllocation);
+            script.set_gOut(mOutAllocation);
+            script.set_gStep(mStep);
+            script.set_gScript(script);
+
+            script.invoke_filter();
+            mScript = script;
+        }
+    };
+
+    private class GrayscaleFilter extends IImageFilter {
+        @Override
+        protected void _process() {
+            ScriptC_GrayscaleFilter script = new ScriptC_GrayscaleFilter(mRS, getResources(), R.raw.grayscalefilter);
+
+            script.set_gIn(mInAllocation);
+            script.set_gOut(mOutAllocation);
+            script.set_gScript(script);
+
+            script.invoke_filter();
+            mScript = script;
+        }
+    };
+
+    private class HistogramEqualFilter extends IImageFilter {
+        private Allocation pixelGrayscaleArrayAllocation;
+
+        @Override
+        protected void _preProcess() {
+            pixelGrayscaleArrayAllocation = Allocation.createSized(mRS, Element.U8(mRS), mBitmapIn.getWidth()
+                    * mBitmapIn.getHeight());
+        }
+
+        @Override
+        protected void _postProcess() {
+            pixelGrayscaleArrayAllocation.destroy();
+            pixelGrayscaleArrayAllocation = null;
+        }
+
+        @Override
+        protected void _process() {
+            ScriptC_HistogramEqualFilter script = new ScriptC_HistogramEqualFilter(mRS, getResources(),
+                    R.raw.histogramequalfilter);
+
+            script.bind_pixelGrayscaleArray(pixelGrayscaleArrayAllocation);
+            script.set_gIn(mInAllocation);
+            script.set_gOut(mOutAllocation);
+            script.set_gScript(script);
+
+            script.invoke_filter();
+            mScript = script;
+        }
+    };
+
+    // TODO add new filter above
     private final ArrayList<IImageFilter> mFilterList = new ArrayList<IImageFilter>();
 
     private ImageView in;
@@ -542,6 +672,11 @@ public class MainActivity extends Activity {
             }
         }.start();
 
+        // TODO add filter into list here
+        mFilterList.add(new HistogramEqualFilter());
+        mFilterList.add(new GrayscaleFilter());
+        mFilterList.add(new SharpFilter(1.0f));
+        mFilterList.add(new FillPatternFilter());
         mFilterList.add(new ThreeDGridFilter(16, 100.0f / 255.0f));
         mFilterList.add(new ColorToneFilter(new Float3(0.12941176470588f, 0.65882352941176f, 0.99607843137255f),
                 0.75294117647059f));

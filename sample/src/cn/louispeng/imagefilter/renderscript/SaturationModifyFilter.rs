@@ -1,6 +1,8 @@
 #pragma version(1)
 #pragma rs java_package_name(cn.louispeng.imagefilter.renderscript)
 
+// 色彩饱和度特效
+
 #include "Clamp.rsh"
 
 // set from the java SDK level

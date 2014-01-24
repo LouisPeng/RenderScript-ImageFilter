@@ -1,6 +1,8 @@
 #pragma version(1)
 #pragma rs java_package_name(cn.louispeng.imagefilter.renderscript)
 
+// 高亮对比度特效
+
 #include "Clamp.rsh"
 
 // set from the java SDK level

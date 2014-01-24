@@ -1,6 +1,8 @@
 #pragma version(1)
 #pragma rs java_package_name(cn.louispeng.imagefilter.renderscript)
 
+// 反色效果
+
 // set from the java SDK level
 rs_allocation gIn;
 rs_allocation gOut;
