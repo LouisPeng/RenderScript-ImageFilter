@@ -1,7 +1,7 @@
 #pragma version(1)
 #pragma rs java_package_name(cn.louispeng.imagefilter.renderscript)
 
-// 直方图均衡处理
+// 直方图特效
 
 #include "Clamp.rsh"
 #include "YUV.rsh"

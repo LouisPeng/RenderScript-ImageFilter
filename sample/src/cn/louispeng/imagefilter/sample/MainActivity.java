@@ -12,9 +12,11 @@ import cn.louispeng.imagefilter.renderscript.ScriptC_ConvolutionFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_EdgeFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_FeatherFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_FillPatternFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_GaussianBlurFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_GradientMapFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_GrayscaleFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_HistogramEqualFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_HslModifyFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_IllusionFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_InvertFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_LightFilter;
@@ -24,12 +26,14 @@ import cn.louispeng.imagefilter.renderscript.ScriptC_MosaicFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_NoiseFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_OilPaintFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_PaintBorderFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_RadialDistortionFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_RaiseFrameFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_ReliefFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_SaturationModifyFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_SharpFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_Test;
 import cn.louispeng.imagefilter.renderscript.ScriptC_ThreeDGridFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_ThresholdFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_VignetteFilter;
 
 import android.app.Activity;
@@ -622,6 +626,116 @@ public class MainActivity extends Activity {
         }
     };
 
+    private class HslModifyFilter extends IImageFilter {
+        private final float mHueFactor;
+
+        public HslModifyFilter(float hueFactor) {
+            mHueFactor = hueFactor;
+        }
+
+        @Override
+        protected void _process() {
+            ScriptC_HslModifyFilter script = new ScriptC_HslModifyFilter(mRS, getResources(), R.raw.hslmodifyfilter);
+
+            script.set_gIn(mInAllocation);
+            script.set_gOut(mOutAllocation);
+            script.set_gScript(script);
+            script.set_gHueFactor(mHueFactor);
+
+            script.invoke_filter();
+            mScript = script;
+        }
+    };
+
+    private class GaussianBlurFilter extends IImageFilter {
+        private int mPadding = 3;
+
+        // The bluriness factor, should be in the range [0, 40].
+        private float mSigma = 0.75f;
+
+        private Allocation mImageWithPaddingBufferAllocation;
+
+        private Allocation mTempBufferAllocation;
+
+        public GaussianBlurFilter() {
+        }
+
+        public GaussianBlurFilter(int padding, float sigma) {
+            mPadding = padding;
+            mSigma = sigma;
+        }
+
+        @Override
+        protected void _preProcess() {
+            int heightWithPadding = mBitmapIn.getHeight() + mPadding * 2;
+            int widthWithPadding = mBitmapIn.getWidth() + mPadding * 2;
+            int bufferSize = widthWithPadding * heightWithPadding * 3;
+            mImageWithPaddingBufferAllocation = Allocation.createSized(mRS, Element.F32(mRS), bufferSize);
+            mTempBufferAllocation = Allocation.createSized(mRS, Element.F32(mRS), bufferSize);
+        }
+
+        @Override
+        protected void _postProcess() {
+            mImageWithPaddingBufferAllocation.destroy();
+            mImageWithPaddingBufferAllocation = null;
+            mTempBufferAllocation.destroy();
+            mTempBufferAllocation = null;
+        }
+
+        @Override
+        protected void _process() {
+            ScriptC_GaussianBlurFilter script = new ScriptC_GaussianBlurFilter(mRS, getResources(),
+                    R.raw.gaussianblurfilter);
+
+            script.set_gIn(mInAllocation);
+            script.set_gOut(mOutAllocation);
+            script.set_gScript(script);
+            script.set_gPadding(mPadding);
+            script.set_gSigma(mSigma);
+            script.bind_gImageWithPaddingBuffer(mImageWithPaddingBufferAllocation);
+            script.bind_gTempBuffer(mTempBufferAllocation);
+
+            script.invoke_filter();
+            mScript = script;
+        }
+    };
+
+    private class ThresholdFilter extends IImageFilter {
+        private final float mThreshold;
+
+        public ThresholdFilter(float threshold) {
+            mThreshold = threshold;
+        }
+
+        @Override
+        protected void _process() {
+            ScriptC_ThresholdFilter script = new ScriptC_ThresholdFilter(mRS, getResources(), R.raw.thresholdfilter);
+
+            script.set_gIn(mInAllocation);
+            script.set_gOut(mOutAllocation);
+            script.set_gScript(script);
+            script.set_gThreshold(mThreshold);
+
+            script.invoke_filter();
+            mScript = script;
+        }
+    };
+
+    private class RadialDistortionFilter extends IImageFilter {
+        @Override
+        protected void _process() {
+            ScriptC_RadialDistortionFilter script = new ScriptC_RadialDistortionFilter(mRS, getResources(),
+                    R.raw.radialdistortionfilter);
+
+            script.set_gIn(mInAllocation);
+            script.set_gOut(mOutAllocation);
+            script.set_gScript(script);
+
+            script.invoke_filter();
+            mScript = script;
+        }
+    };
+
     // TODO add new filter above
     private final ArrayList<IImageFilter> mFilterList = new ArrayList<IImageFilter>();
 
@@ -673,13 +787,16 @@ public class MainActivity extends Activity {
         }.start();
 
         // TODO add filter into list here
+        mFilterList.add(new RadialDistortionFilter());
+        mFilterList.add(new ThresholdFilter(0.5f));
+        mFilterList.add(new GaussianBlurFilter(3, 10.0f));
+        mFilterList.add(new HslModifyFilter(20.0f));
         mFilterList.add(new HistogramEqualFilter());
         mFilterList.add(new GrayscaleFilter());
         mFilterList.add(new SharpFilter(1.0f));
         mFilterList.add(new FillPatternFilter());
         mFilterList.add(new ThreeDGridFilter(16, 100.0f / 255.0f));
-        mFilterList.add(new ColorToneFilter(new Float3(0.12941176470588f, 0.65882352941176f, 0.99607843137255f),
-                0.75294117647059f));
+        mFilterList.add(new ColorToneFilter(new Float3(0.1294f, 0.6588f, 0.9961f), 0.7529f));
         mFilterList.add(new ColorQuantizeFilter());
         mFilterList.add(new BlindFilter(new Float3(0, 0, 0), true));
         mFilterList.add(new BlindFilter(new Float3(1.0f, 1.0f, 1.0f), false));
