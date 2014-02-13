@@ -1,22 +1,6 @@
+
 package cn.louispeng.imagefilter.sample;
 
-import java.util.ArrayList;
-
-import android.app.Activity;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.os.AsyncTask;
-import android.os.Bundle;
-import android.renderscript.Allocation;
-import android.renderscript.Element;
-import android.renderscript.Float3;
-import android.renderscript.RenderScript;
-import android.renderscript.ScriptC;
-import android.util.Log;
-import android.view.Menu;
-import android.view.View;
-import android.view.View.OnClickListener;
-import android.widget.ImageView;
 import cn.louispeng.imagefilter.renderscript.ScriptC_BannerFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_BigBrotherFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_BlackWhiteFilter;
@@ -57,6 +41,30 @@ import cn.louispeng.imagefilter.renderscript.ScriptC_ThreeDGridFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_ThresholdFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_VignetteFilter;
 
+import android.app.Activity;
+import android.graphics.Bitmap;
+import android.graphics.Bitmap.CompressFormat;
+import android.graphics.BitmapFactory;
+import android.os.AsyncTask;
+import android.os.Bundle;
+import android.os.Environment;
+import android.renderscript.Allocation;
+import android.renderscript.Element;
+import android.renderscript.Float3;
+import android.renderscript.RenderScript;
+import android.renderscript.ScriptC;
+import android.util.Log;
+import android.view.Menu;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.ImageView;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+
 public class MainActivity extends Activity {
     private class FilterTask extends AsyncTask<Void, Void, Void> {
 
@@ -88,17 +96,29 @@ public class MainActivity extends Activity {
 
     public static class BlendMode {
         public static int Normal = 0;
+
         public static int Additive = 1;
+
         public static int Subractive = 2;
+
         public static int Multiply = 3;
+
         public static int Overlay = 4;
+
         public static int ColorDodge = 5;
+
         public static int ColorBurn = 6;
+
         public static int Lighten = 7;
+
         public static int Darken = 8;
+
         public static int Reflect = 9;
+
         public static int Glow = 10;
+
         public static int LinearLight = 11;
+
         public static int Frame = 12;/* photo frame */
 
     }
@@ -142,6 +162,32 @@ public class MainActivity extends Activity {
 
         protected void postProcess() {
             mOutAllocation.copyTo(mBitmapOut);
+            File outputFile = new File(Environment.getExternalStorageDirectory() + "/test/"
+                    + this.getClass().getSimpleName() + ".jpeg");
+            if (!outputFile.exists()) {
+                try {
+                    outputFile.createNewFile();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            FileOutputStream fos = null;
+            try {
+                fos = new FileOutputStream(outputFile);
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
+
+            if (null != fos) {
+                mBitmapOut.compress(CompressFormat.JPEG, 100, fos);
+
+                try {
+                    fos.close();
+                    fos = null;
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
             mScript.destroy();
             mScript = null;
             mInAllocation.destroy();
@@ -266,6 +312,19 @@ public class MainActivity extends Activity {
     };
 
     private class BrightContrastFilter extends IImageFilter {
+        // The brightness factor.
+        // Should be in the range [-1.0f, 1.0f].
+        private float mBrightnessFactor;
+
+        // The contrast factor.
+        // Should be in the range [-1.0f, 1.0f].
+        private float mContrastFactor;
+
+        public BrightContrastFilter(float brightnessFactor, float contrastFactor) {
+            mBrightnessFactor = brightnessFactor;
+            mContrastFactor = contrastFactor;
+        }
+
         @Override
         protected final void _process() {
             ScriptC_BrightContrastFilter script = new ScriptC_BrightContrastFilter(mRS, getResources(),
@@ -273,6 +332,8 @@ public class MainActivity extends Activity {
 
             script.set_gIn(mInAllocation);
             script.set_gOut(mOutAllocation);
+            script.set_gBrightnessFactor(mBrightnessFactor);
+            script.set_gContrastFactor(mContrastFactor);
             script.set_gScript(script);
 
             script.invoke_filter();
@@ -628,7 +689,13 @@ public class MainActivity extends Activity {
     };
 
     private class HistogramEqualFilter extends IImageFilter {
+        private final float mContrastIntensity;
+
         private Allocation pixelGrayscaleArrayAllocation;
+
+        public HistogramEqualFilter(float contrastIntensity) {
+            mContrastIntensity = contrastIntensity;
+        }
 
         @Override
         protected void _preProcess() {
@@ -650,6 +717,7 @@ public class MainActivity extends Activity {
             script.bind_pixelGrayscaleArray(pixelGrayscaleArrayAllocation);
             script.set_gIn(mInAllocation);
             script.set_gOut(mOutAllocation);
+            script.set_gContrastIntensity(mContrastIntensity);
             script.set_gScript(script);
 
             script.invoke_filter();
@@ -685,6 +753,7 @@ public class MainActivity extends Activity {
         private float mSigma = 0.75f;
 
         private Allocation mImageWithPaddingBufferAllocation;
+
         private Allocation mTempBufferAllocation;
 
         public GaussianBlurFilter(int padding, float sigma) {
@@ -765,6 +834,7 @@ public class MainActivity extends Activity {
 
     private class BlockPrintFilter extends IImageFilter {
         private Allocation mTmpOutputAllocation;
+
         private ScriptC_ImageBlender mBlenderScript;
 
         @Override
@@ -812,6 +882,7 @@ public class MainActivity extends Activity {
 
     private class SmashColorFilter extends IImageFilter {
         private Allocation mTmpOutputAllocation;
+
         private ScriptC_ImageBlender mBlenderScript;
 
         @Override
@@ -861,16 +932,22 @@ public class MainActivity extends Activity {
     private class SoftGlowFilter extends IImageFilter {
         // BrightContrastFilter factors
         private final float mBrightness;
+
         private final float mContrast;
 
         // For GaussianBlurFilter
         private final float mSigma;
+
         private final int mPadding = 3;
+
         private Allocation mImageWithPaddingBufferAllocation;
+
         private Allocation mTempBufferAllocation;
 
         private Allocation mTmpOutputAllocation;
+
         private ScriptC_BrightContrastFilter mBrightContrastFilterScript;
+
         private ScriptC_GaussianBlurFilter mGaussianBlurFilterScript;
 
         public SoftGlowFilter(int sigma, float brightness, float contrast) {
@@ -906,24 +983,24 @@ public class MainActivity extends Activity {
 
         @Override
         protected void _process() {
-            mBrightContrastFilterScript = new ScriptC_BrightContrastFilter(mRS, getResources(),
-                    R.raw.brightcontrastfilter);
-            mBrightContrastFilterScript.set_gIn(mInAllocation);
-            mBrightContrastFilterScript.set_gOut(mOutAllocation);
-            mBrightContrastFilterScript.set_gScript(mBrightContrastFilterScript);
-            mBrightContrastFilterScript.set_gBrightnessFactor(mBrightness);
-            mBrightContrastFilterScript.set_gContrastFactor(mContrast);
-            mBrightContrastFilterScript.invoke_filter();
-
             mGaussianBlurFilterScript = new ScriptC_GaussianBlurFilter(mRS, getResources(), R.raw.gaussianblurfilter);
-            mGaussianBlurFilterScript.set_gIn(mOutAllocation);
-            mGaussianBlurFilterScript.set_gOut(mTmpOutputAllocation);
+            mGaussianBlurFilterScript.set_gIn(mInAllocation);
+            mGaussianBlurFilterScript.set_gOut(mOutAllocation);
             mGaussianBlurFilterScript.set_gPadding(mPadding);
             mGaussianBlurFilterScript.set_gSigma(mSigma);
             mGaussianBlurFilterScript.bind_gImageWithPaddingBuffer(mImageWithPaddingBufferAllocation);
             mGaussianBlurFilterScript.bind_gTempBuffer(mTempBufferAllocation);
             mGaussianBlurFilterScript.set_gScript(mGaussianBlurFilterScript);
             mGaussianBlurFilterScript.invoke_filter();
+
+            mBrightContrastFilterScript = new ScriptC_BrightContrastFilter(mRS, getResources(),
+                    R.raw.brightcontrastfilter);
+            mBrightContrastFilterScript.set_gIn(mOutAllocation);
+            mBrightContrastFilterScript.set_gOut(mTmpOutputAllocation);
+            mBrightContrastFilterScript.set_gScript(mBrightContrastFilterScript);
+            mBrightContrastFilterScript.set_gBrightnessFactor(mBrightness);
+            mBrightContrastFilterScript.set_gContrastFactor(mContrast);
+            mBrightContrastFilterScript.invoke_filter();
 
             ScriptC_SoftGlowFilter script = new ScriptC_SoftGlowFilter(mRS, getResources(), R.raw.softglowfilter);
 
@@ -972,6 +1049,7 @@ public class MainActivity extends Activity {
 
     private class ParamEdgeDetectFilter extends IImageFilter {
         private final boolean DoGrayConversion;
+
         private final boolean DoInversion;
 
         public ParamEdgeDetectFilter() {
@@ -1002,14 +1080,21 @@ public class MainActivity extends Activity {
     private class ComicFilter extends IImageFilter {
         // For GaussianBlurFilter
         private final int mPadding = 3;
+
         private Allocation mImageWithPaddingBufferAllocation;
+
         private Allocation mTempBufferAllocation;
 
         private Allocation mEdgedAllocation;
+
         private Allocation mSaturatedAllocation;
+
         private ScriptC_SaturationModifyFilter mSaturationModifyFilter;
+
         private ScriptC_GaussianBlurFilter mGaussianBlurFilterScript;
+
         private ScriptC_ImageBlender mBlenderScript;
+
         private ScriptC_ParamEdgeDetectFilter mParamEdgeDetectFilter;
 
         @Override
@@ -1113,10 +1198,10 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mBitmapIn = loadBitmap(R.drawable.image2);
+        mBitmapIn = loadBitmap(R.drawable.histogram_equal_test);
         mBitmapOut = Bitmap.createBitmap(mBitmapIn.getWidth(), mBitmapIn.getHeight(), mBitmapIn.getConfig());
 
-        in = (ImageView) findViewById(R.id.displayin);
+        in = (ImageView)findViewById(R.id.displayin);
         in.setImageBitmap(mBitmapIn);
         in.setOnClickListener(new OnClickListener() {
             @Override
@@ -1128,7 +1213,7 @@ public class MainActivity extends Activity {
             }
         });
 
-        out = (ImageView) findViewById(R.id.displayout);
+        out = (ImageView)findViewById(R.id.displayout);
         out.setImageBitmap(mBitmapOut);
 
         // Test
@@ -1160,7 +1245,7 @@ public class MainActivity extends Activity {
         mFilterList.add(new ThresholdFilter(0.5f));
         mFilterList.add(new GaussianBlurFilter(3, 10.0f));
         mFilterList.add(new HslModifyFilter(20.0f));
-        mFilterList.add(new HistogramEqualFilter());
+        mFilterList.add(new HistogramEqualFilter(0.25f));
         mFilterList.add(new GrayscaleFilter());
         mFilterList.add(new SharpFilter(1.0f));
         mFilterList.add(new FillPatternFilter());
@@ -1180,7 +1265,7 @@ public class MainActivity extends Activity {
         mFilterList.add(new MosaicFilter());
         mFilterList.add(new LightFilter());
         mFilterList.add(new IllusionFilter());
-        mFilterList.add(new BrightContrastFilter());
+        mFilterList.add(new BrightContrastFilter(1.0f, 1.0f));
         mFilterList.add(new InvertFilter());
         mFilterList.add(new FeatherFilter());
         mFilterList.add(new BrickFilter());

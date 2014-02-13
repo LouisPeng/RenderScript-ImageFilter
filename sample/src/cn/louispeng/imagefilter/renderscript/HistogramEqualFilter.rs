@@ -13,7 +13,7 @@ uint8_t *pixelGrayscaleArray;
 rs_script gScript;
 
 // Magic factors
-static float ContrastIntensity = 1.0f;
+float gContrastIntensity = 1.0f;
 
 // Static variables
 static uint32_t _width;
@@ -69,7 +69,7 @@ static void setup() {
     uint32_t pixelCount = _height * _width;
     for (int32_t i = 0; i < MAX_GRAYSCALE_COUNT; i++) {
         _GrayscaleCumulativeProbabilityArray[i] = ((float)(_GrayscaleCountArray[i] * (MAX_GRAYSCALE_COUNT - 1))) / pixelCount;
-        _GrayscaleCumulativeProbabilityArray[i] = (ContrastIntensity * _GrayscaleCumulativeProbabilityArray[i]) + ((1.0f - ContrastIntensity) * i);
+        _GrayscaleCumulativeProbabilityArray[i] = (gContrastIntensity * _GrayscaleCumulativeProbabilityArray[i]) + ((1.0f - gContrastIntensity) * i);
     }
 }
 
