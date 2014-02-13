@@ -1,6 +1,24 @@
-
 package cn.louispeng.imagefilter.sample;
 
+import java.util.ArrayList;
+
+import android.app.Activity;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.os.AsyncTask;
+import android.os.Bundle;
+import android.renderscript.Allocation;
+import android.renderscript.Element;
+import android.renderscript.Float3;
+import android.renderscript.RenderScript;
+import android.renderscript.ScriptC;
+import android.util.Log;
+import android.view.Menu;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.ImageView;
+import cn.louispeng.imagefilter.renderscript.ScriptC_BannerFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_BigBrotherFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_BlackWhiteFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_BlindFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_BrickFilter;
@@ -18,6 +36,7 @@ import cn.louispeng.imagefilter.renderscript.ScriptC_GrayscaleFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_HistogramEqualFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_HslModifyFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_IllusionFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_ImageBlender;
 import cn.louispeng.imagefilter.renderscript.ScriptC_InvertFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_LightFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_MirrorFilter;
@@ -26,33 +45,17 @@ import cn.louispeng.imagefilter.renderscript.ScriptC_MosaicFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_NoiseFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_OilPaintFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_PaintBorderFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_ParamEdgeDetectFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_RadialDistortionFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_RaiseFrameFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_ReliefFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_SaturationModifyFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_SharpFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_SoftGlowFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_Test;
 import cn.louispeng.imagefilter.renderscript.ScriptC_ThreeDGridFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_ThresholdFilter;
 import cn.louispeng.imagefilter.renderscript.ScriptC_VignetteFilter;
-
-import android.app.Activity;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.os.AsyncTask;
-import android.os.Bundle;
-import android.renderscript.Allocation;
-import android.renderscript.Element;
-import android.renderscript.Float3;
-import android.renderscript.RenderScript;
-import android.renderscript.ScriptC;
-import android.util.Log;
-import android.view.Menu;
-import android.view.View;
-import android.view.View.OnClickListener;
-import android.widget.ImageView;
-
-import java.util.ArrayList;
 
 public class MainActivity extends Activity {
     private class FilterTask extends AsyncTask<Void, Void, Void> {
@@ -81,6 +84,23 @@ public class MainActivity extends Activity {
             super.onPostExecute(result);
             mFilterTask = null;
         }
+    }
+
+    public static class BlendMode {
+        public static int Normal = 0;
+        public static int Additive = 1;
+        public static int Subractive = 2;
+        public static int Multiply = 3;
+        public static int Overlay = 4;
+        public static int ColorDodge = 5;
+        public static int ColorBurn = 6;
+        public static int Lighten = 7;
+        public static int Darken = 8;
+        public static int Reflect = 9;
+        public static int Glow = 10;
+        public static int LinearLight = 11;
+        public static int Frame = 12;/* photo frame */
+
     }
 
     private abstract class IImageFilter {
@@ -115,7 +135,7 @@ public class MainActivity extends Activity {
             startTime = System.currentTimeMillis();
             _preProcess();
             _process();
-            Log.d("profile", mScript.getClass().getSimpleName() + " use " + (System.currentTimeMillis() - startTime));
+            Log.d("profile", getClass().getSimpleName() + " use " + (System.currentTimeMillis() - startTime));
             _postProcess();
             postProcess();
         }
@@ -135,6 +155,16 @@ public class MainActivity extends Activity {
     };
 
     private class SaturationModifyFilter extends IImageFilter {
+        private final float mSaturationFactor;
+
+        public SaturationModifyFilter() {
+            mSaturationFactor = 0.5f;
+        }
+
+        public SaturationModifyFilter(float saturationFactor) {
+            mSaturationFactor = saturationFactor;
+        }
+
         @Override
         public void _process() {
             ScriptC_SaturationModifyFilter script = new ScriptC_SaturationModifyFilter(mRS, getResources(),
@@ -142,6 +172,7 @@ public class MainActivity extends Activity {
 
             script.set_gIn(mInAllocation);
             script.set_gOut(mOutAllocation);
+            script.set_gSaturationFactor(mSaturationFactor);
             script.set_gScript(script);
 
             script.invoke_filter();
@@ -654,11 +685,7 @@ public class MainActivity extends Activity {
         private float mSigma = 0.75f;
 
         private Allocation mImageWithPaddingBufferAllocation;
-
         private Allocation mTempBufferAllocation;
-
-        public GaussianBlurFilter() {
-        }
 
         public GaussianBlurFilter(int padding, float sigma) {
             mPadding = padding;
@@ -736,6 +763,336 @@ public class MainActivity extends Activity {
         }
     };
 
+    private class BlockPrintFilter extends IImageFilter {
+        private Allocation mTmpOutputAllocation;
+        private ScriptC_ImageBlender mBlenderScript;
+
+        @Override
+        protected void _preProcess() {
+            mTmpOutputAllocation = Allocation.createFromBitmap(mRS, mBitmapOut);
+        }
+
+        @Override
+        protected void _postProcess() {
+            mTmpOutputAllocation.destroy();
+            mTmpOutputAllocation = null;
+            mBlenderScript.destroy();
+            mBlenderScript = null;
+        }
+
+        @Override
+        protected void _process() {
+            ScriptC_ParamEdgeDetectFilter script = new ScriptC_ParamEdgeDetectFilter(mRS, getResources(),
+                    R.raw.paramedgedetectfilter);
+
+            script.set_gIn(mInAllocation);
+            script.set_gOut(mTmpOutputAllocation);
+            script.set_gThreshold(0.25f);
+            script.set_gK00(1.0f);
+            script.set_gK01(2.0f);
+            script.set_gK02(1.0f);
+            script.set_gDoGrayConversion(0);
+            script.set_gDoInversion(0);
+            script.set_gScript(script);
+
+            script.invoke_filter();
+            mScript = script;
+
+            mBlenderScript = new ScriptC_ImageBlender(mRS, getResources(), R.raw.imageblender);
+
+            mBlenderScript.set_gIn1(mInAllocation);
+            mBlenderScript.set_gIn2(mTmpOutputAllocation);
+            mBlenderScript.set_gOut(mOutAllocation);
+            mBlenderScript.set_gBlendMode(BlendMode.Multiply);
+            mBlenderScript.set_gScript(mBlenderScript);
+
+            mBlenderScript.invoke_filter();
+        }
+    };
+
+    private class SmashColorFilter extends IImageFilter {
+        private Allocation mTmpOutputAllocation;
+        private ScriptC_ImageBlender mBlenderScript;
+
+        @Override
+        protected void _preProcess() {
+            mTmpOutputAllocation = Allocation.createFromBitmap(mRS, mBitmapOut);
+        }
+
+        @Override
+        protected void _postProcess() {
+            mTmpOutputAllocation.destroy();
+            mTmpOutputAllocation = null;
+            mBlenderScript.destroy();
+            mBlenderScript = null;
+        }
+
+        @Override
+        protected void _process() {
+            ScriptC_ParamEdgeDetectFilter script = new ScriptC_ParamEdgeDetectFilter(mRS, getResources(),
+                    R.raw.paramedgedetectfilter);
+
+            script.set_gIn(mInAllocation);
+            script.set_gOut(mTmpOutputAllocation);
+            script.set_gThreshold(0.25f);
+            script.set_gK00(1.0f);
+            script.set_gK01(2.0f);
+            script.set_gK02(1.0f);
+            script.set_gDoGrayConversion(0);
+            script.set_gDoInversion(0);
+            script.set_gScript(script);
+
+            script.invoke_filter();
+            mScript = script;
+
+            mBlenderScript = new ScriptC_ImageBlender(mRS, getResources(), R.raw.imageblender);
+
+            mBlenderScript.set_gIn1(mInAllocation);
+            mBlenderScript.set_gIn2(mTmpOutputAllocation);
+            mBlenderScript.set_gOut(mOutAllocation);
+            mBlenderScript.set_gBlendMode(BlendMode.LinearLight);
+            mBlenderScript.set_gMixture(2.5f);
+            mBlenderScript.set_gScript(mBlenderScript);
+
+            mBlenderScript.invoke_filter();
+        }
+    };
+
+    private class SoftGlowFilter extends IImageFilter {
+        // BrightContrastFilter factors
+        private final float mBrightness;
+        private final float mContrast;
+
+        // For GaussianBlurFilter
+        private final float mSigma;
+        private final int mPadding = 3;
+        private Allocation mImageWithPaddingBufferAllocation;
+        private Allocation mTempBufferAllocation;
+
+        private Allocation mTmpOutputAllocation;
+        private ScriptC_BrightContrastFilter mBrightContrastFilterScript;
+        private ScriptC_GaussianBlurFilter mGaussianBlurFilterScript;
+
+        public SoftGlowFilter(int sigma, float brightness, float contrast) {
+            mSigma = sigma;
+            mBrightness = brightness;
+            mContrast = contrast;
+        }
+
+        @Override
+        protected void _preProcess() {
+            int heightWithPadding = mBitmapIn.getHeight() + mPadding * 2;
+            int widthWithPadding = mBitmapIn.getWidth() + mPadding * 2;
+            int bufferSize = widthWithPadding * heightWithPadding * 3;
+            mImageWithPaddingBufferAllocation = Allocation.createSized(mRS, Element.F32(mRS), bufferSize);
+            mTempBufferAllocation = Allocation.createSized(mRS, Element.F32(mRS), bufferSize);
+            mTmpOutputAllocation = Allocation.createFromBitmap(mRS, mBitmapOut);
+        }
+
+        @Override
+        protected void _postProcess() {
+            mImageWithPaddingBufferAllocation.destroy();
+            mImageWithPaddingBufferAllocation = null;
+            mTempBufferAllocation.destroy();
+            mTempBufferAllocation = null;
+
+            mTmpOutputAllocation.destroy();
+            mTmpOutputAllocation = null;
+            mBrightContrastFilterScript.destroy();
+            mBrightContrastFilterScript = null;
+            mGaussianBlurFilterScript.destroy();
+            mGaussianBlurFilterScript = null;
+        }
+
+        @Override
+        protected void _process() {
+            mBrightContrastFilterScript = new ScriptC_BrightContrastFilter(mRS, getResources(),
+                    R.raw.brightcontrastfilter);
+            mBrightContrastFilterScript.set_gIn(mInAllocation);
+            mBrightContrastFilterScript.set_gOut(mOutAllocation);
+            mBrightContrastFilterScript.set_gScript(mBrightContrastFilterScript);
+            mBrightContrastFilterScript.set_gBrightnessFactor(mBrightness);
+            mBrightContrastFilterScript.set_gContrastFactor(mContrast);
+            mBrightContrastFilterScript.invoke_filter();
+
+            mGaussianBlurFilterScript = new ScriptC_GaussianBlurFilter(mRS, getResources(), R.raw.gaussianblurfilter);
+            mGaussianBlurFilterScript.set_gIn(mOutAllocation);
+            mGaussianBlurFilterScript.set_gOut(mTmpOutputAllocation);
+            mGaussianBlurFilterScript.set_gPadding(mPadding);
+            mGaussianBlurFilterScript.set_gSigma(mSigma);
+            mGaussianBlurFilterScript.bind_gImageWithPaddingBuffer(mImageWithPaddingBufferAllocation);
+            mGaussianBlurFilterScript.bind_gTempBuffer(mTempBufferAllocation);
+            mGaussianBlurFilterScript.set_gScript(mGaussianBlurFilterScript);
+            mGaussianBlurFilterScript.invoke_filter();
+
+            ScriptC_SoftGlowFilter script = new ScriptC_SoftGlowFilter(mRS, getResources(), R.raw.softglowfilter);
+
+            script.set_gIn(mInAllocation);
+            script.set_gProcessedIn(mTmpOutputAllocation);
+            script.set_gOut(mOutAllocation);
+            script.set_gScript(script);
+
+            script.invoke_filter();
+            mScript = script;
+        }
+    };
+
+    private class BigBrotherFilter extends IImageFilter {
+        @Override
+        protected void _process() {
+            ScriptC_BigBrotherFilter script = new ScriptC_BigBrotherFilter(mRS, getResources(), R.raw.bigbrotherfilter);
+
+            script.set_gIn(mInAllocation);
+            script.set_gOut(mOutAllocation);
+            script.set_gScript(script);
+
+            script.invoke_filter();
+            mScript = script;
+        }
+    };
+
+    private class BannerFilter extends IImageFilter {
+        private final boolean mIsHorizontal;
+
+        public BannerFilter(boolean isHorizontal) {
+            mIsHorizontal = isHorizontal;
+        }
+
+        @Override
+        protected void _process() {
+            ScriptC_BannerFilter script = new ScriptC_BannerFilter(mRS, getResources(), R.raw.bannerfilter);
+
+            script.set_gIn(mInAllocation);
+            script.set_gOut(mOutAllocation);
+            script.set_gIsHorizontal(mIsHorizontal ? 1 : 0);
+            script.invoke_process();
+            mScript = script;
+        }
+    };
+
+    private class ParamEdgeDetectFilter extends IImageFilter {
+        private final boolean DoGrayConversion;
+        private final boolean DoInversion;
+
+        public ParamEdgeDetectFilter() {
+            DoGrayConversion = true;
+            DoInversion = true;
+        }
+
+        public ParamEdgeDetectFilter(boolean doGrayConversion, boolean doInversion) {
+            DoGrayConversion = doGrayConversion;
+            DoInversion = doInversion;
+        }
+
+        @Override
+        protected void _process() {
+            ScriptC_ParamEdgeDetectFilter script = new ScriptC_ParamEdgeDetectFilter(mRS, getResources(),
+                    R.raw.paramedgedetectfilter);
+
+            script.set_gIn(mInAllocation);
+            script.set_gOut(mOutAllocation);
+            script.set_gDoGrayConversion(DoGrayConversion ? 1 : 0);
+            script.set_gDoInversion(DoInversion ? 1 : 0);
+            script.set_gScript(script);
+            script.invoke_filter();
+            mScript = script;
+        }
+    };
+
+    private class ComicFilter extends IImageFilter {
+        // For GaussianBlurFilter
+        private final int mPadding = 3;
+        private Allocation mImageWithPaddingBufferAllocation;
+        private Allocation mTempBufferAllocation;
+
+        private Allocation mEdgedAllocation;
+        private Allocation mSaturatedAllocation;
+        private ScriptC_SaturationModifyFilter mSaturationModifyFilter;
+        private ScriptC_GaussianBlurFilter mGaussianBlurFilterScript;
+        private ScriptC_ImageBlender mBlenderScript;
+        private ScriptC_ParamEdgeDetectFilter mParamEdgeDetectFilter;
+
+        @Override
+        protected void _preProcess() {
+            int heightWithPadding = mBitmapIn.getHeight() + mPadding * 2;
+            int widthWithPadding = mBitmapIn.getWidth() + mPadding * 2;
+            int bufferSize = widthWithPadding * heightWithPadding * 3;
+            mImageWithPaddingBufferAllocation = Allocation.createSized(mRS, Element.F32(mRS), bufferSize);
+            mTempBufferAllocation = Allocation.createSized(mRS, Element.F32(mRS), bufferSize);
+
+            mEdgedAllocation = Allocation.createFromBitmap(mRS, mBitmapOut);
+            mSaturatedAllocation = Allocation.createFromBitmap(mRS, mBitmapOut);
+        }
+
+        @Override
+        protected void _postProcess() {
+            mImageWithPaddingBufferAllocation.destroy();
+            mImageWithPaddingBufferAllocation = null;
+            mTempBufferAllocation.destroy();
+            mTempBufferAllocation = null;
+
+            mEdgedAllocation.destroy();
+            mEdgedAllocation = null;
+            mSaturatedAllocation.destroy();
+            mSaturatedAllocation = null;
+
+            mSaturationModifyFilter.destroy();
+            mSaturationModifyFilter = null;
+            mGaussianBlurFilterScript.destroy();
+            mGaussianBlurFilterScript = null;
+            mBlenderScript.destroy();
+            mBlenderScript = null;
+            mParamEdgeDetectFilter.destroy();
+            mParamEdgeDetectFilter = null;
+        }
+
+        @Override
+        protected void _process() {
+            mSaturationModifyFilter = new ScriptC_SaturationModifyFilter(mRS, getResources(),
+                    R.raw.saturationmodifyfilter);
+            mSaturationModifyFilter.set_gIn(mInAllocation);
+            mSaturationModifyFilter.set_gOut(mSaturatedAllocation);
+            mSaturationModifyFilter.set_gSaturationFactor(1.0f);
+            mSaturationModifyFilter.set_gScript(mSaturationModifyFilter);
+            mSaturationModifyFilter.invoke_filter();
+
+            mGaussianBlurFilterScript = new ScriptC_GaussianBlurFilter(mRS, getResources(), R.raw.gaussianblurfilter);
+            mGaussianBlurFilterScript.set_gIn(mSaturatedAllocation);
+            mGaussianBlurFilterScript.set_gOut(mSaturatedAllocation);
+            mGaussianBlurFilterScript.set_gPadding(mPadding);
+            mGaussianBlurFilterScript.set_gSigma(1.0f);
+            mGaussianBlurFilterScript.bind_gImageWithPaddingBuffer(mImageWithPaddingBufferAllocation);
+            mGaussianBlurFilterScript.bind_gTempBuffer(mTempBufferAllocation);
+            mGaussianBlurFilterScript.set_gScript(mGaussianBlurFilterScript);
+            mGaussianBlurFilterScript.invoke_filter();
+
+            mBlenderScript = new ScriptC_ImageBlender(mRS, getResources(), R.raw.imageblender);
+            mBlenderScript.set_gIn1(mSaturatedAllocation);
+            mBlenderScript.set_gIn2(mSaturatedAllocation);
+            mBlenderScript.set_gOut(mOutAllocation);
+            mBlenderScript.set_gBlendMode(BlendMode.Lighten);
+            mBlenderScript.set_gMixture(1.0f);
+            mBlenderScript.set_gScript(mBlenderScript);
+            mBlenderScript.invoke_filter();
+
+            mParamEdgeDetectFilter = new ScriptC_ParamEdgeDetectFilter(mRS, getResources(), R.raw.paramedgedetectfilter);
+            mParamEdgeDetectFilter.set_gIn(mOutAllocation);
+            mParamEdgeDetectFilter.set_gOut(mEdgedAllocation);
+            mParamEdgeDetectFilter.set_gScript(mParamEdgeDetectFilter);
+            mParamEdgeDetectFilter.invoke_filter();
+
+            ScriptC_ImageBlender script = new ScriptC_ImageBlender(mRS, getResources(), R.raw.imageblender);
+            script.set_gIn1(mOutAllocation);
+            script.set_gIn2(mEdgedAllocation);
+            script.set_gOut(mOutAllocation);
+            script.set_gBlendMode(BlendMode.Lighten);
+            script.set_gMixture(0.8f);
+            script.set_gScript(script);
+            script.invoke_filter();
+            mScript = script;
+        }
+    };
+
     // TODO add new filter above
     private final ArrayList<IImageFilter> mFilterList = new ArrayList<IImageFilter>();
 
@@ -759,7 +1116,7 @@ public class MainActivity extends Activity {
         mBitmapIn = loadBitmap(R.drawable.image2);
         mBitmapOut = Bitmap.createBitmap(mBitmapIn.getWidth(), mBitmapIn.getHeight(), mBitmapIn.getConfig());
 
-        in = (ImageView)findViewById(R.id.displayin);
+        in = (ImageView) findViewById(R.id.displayin);
         in.setImageBitmap(mBitmapIn);
         in.setOnClickListener(new OnClickListener() {
             @Override
@@ -771,11 +1128,11 @@ public class MainActivity extends Activity {
             }
         });
 
-        out = (ImageView)findViewById(R.id.displayout);
+        out = (ImageView) findViewById(R.id.displayout);
         out.setImageBitmap(mBitmapOut);
 
         // Test
-        new Thread("Test thread") {
+        Thread testThread = new Thread("Test thread") {
             @Override
             public void run() {
                 RenderScript mRS = RenderScript.create(getApplicationContext());
@@ -784,9 +1141,21 @@ public class MainActivity extends Activity {
                 script.destroy();
                 mRS.destroy();
             }
-        }.start();
+        };
+        // testThread.start();
 
         // TODO add filter into list here
+        mFilterList.add(new ComicFilter());
+        mFilterList.add(new ParamEdgeDetectFilter(true, true));
+        mFilterList.add(new ParamEdgeDetectFilter(false, true));
+        mFilterList.add(new ParamEdgeDetectFilter(true, false));
+        mFilterList.add(new ParamEdgeDetectFilter(false, false));
+        mFilterList.add(new BannerFilter(true));
+        mFilterList.add(new BannerFilter(false));
+        mFilterList.add(new BigBrotherFilter());
+        mFilterList.add(new SoftGlowFilter(10, 0.1f, 0.1f));
+        mFilterList.add(new SmashColorFilter());
+        mFilterList.add(new BlockPrintFilter());
         mFilterList.add(new RadialDistortionFilter());
         mFilterList.add(new ThresholdFilter(0.5f));
         mFilterList.add(new GaussianBlurFilter(3, 10.0f));

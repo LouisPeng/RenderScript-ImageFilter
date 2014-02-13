@@ -1,7 +1,7 @@
 #pragma version(1)
 #pragma rs java_package_name(cn.louispeng.imagefilter.renderscript)
 
-#include "LUTFilter.rsh"
+#include "LUT.rsh"
 #include "Clamp.rsh"
 
 // set from the java SDK level

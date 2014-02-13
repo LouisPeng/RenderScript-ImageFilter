@@ -5,21 +5,21 @@
 
 typedef enum _BlendMode {
     Normal = 0,
-    Additive,
-    Subtractive,
-    Multiply,
-    Overlay,
-    ColorDodge,
-    ColorBurn,
-    Lighten,
-    Darken,
-    Reflect,
-    Glow,
-    LinearLight,
-    Frame			/* photo frame */
+    Additive = 1,
+    Subtractive = 2,
+    Multiply = 3,
+    Overlay = 4,
+    ColorDodge = 5,
+    ColorBurn = 6,
+    Lighten = 7,
+    Darken = 8,
+    Reflect = 9,
+    Glow = 10,
+    LinearLight = 11,
+    Frame = 12,			/* photo frame */
 }BlendMode;
 
-static float3 FBlend(const float3 srcRGB, const float3 blendRGB, const BlendMode blendMode, const float mixture) {
+static float3 FBlend(const float3 srcRGB, const float3 blendRGB, const BlendMode blendMode, const float mixture, int32_t debug) {
 	float3 retRGB;
 	
 	switch(blendMode) {	
@@ -105,6 +105,7 @@ static float3 FBlend(const float3 srcRGB, const float3 blendRGB, const BlendMode
             retRGB.r = srcRGB.r + (2 * (blendRGB.r - 0.5f));
             retRGB.r = (retRGB.r > 1.0f) ? 1.0f : retRGB.r;
         }
+        
         if (blendRGB.g < 0.5f) {
             retRGB.g = srcRGB.g + (2 * blendRGB.g);
             retRGB.g = (retRGB.g < 1.0f) ? 0 : (retRGB.g - 1.0f);
@@ -112,6 +113,7 @@ static float3 FBlend(const float3 srcRGB, const float3 blendRGB, const BlendMode
             retRGB.g = srcRGB.g + (2 * (blendRGB.g - 0.5f));
             retRGB.g = (retRGB.g > 1.0f) ? 1.0f : retRGB.g;
         }
+        
         if (blendRGB.b < 0.5f) {
             retRGB.b = srcRGB.b + (2 * blendRGB.b);
             retRGB.b = (retRGB.b < 1.0f) ? 0 : (retRGB.b - 1.0f);
@@ -123,7 +125,7 @@ static float3 FBlend(const float3 srcRGB, const float3 blendRGB, const BlendMode
 	}
 	case Frame:{
 		if ((blendRGB.r == 0 && blendRGB.g == 0 && blendRGB.r == 0)) {
-            // 探测边框颜色(blendRGB.r > 230 && blendRGB.g > 230 && blendRGB.b > 230)
+            // 探测边框颜色(blendRGB.r > 0.902f && blendRGB.g > 0.902f && blendRGB.b > 0.902f)
             retRGB.r = srcRGB.r;
             retRGB.g = srcRGB.g;
             retRGB.b = srcRGB.b;
@@ -141,8 +143,12 @@ static float3 FBlend(const float3 srcRGB, const float3 blendRGB, const BlendMode
 	}
 	}
 	
-	retRGB = (srcRGB * ( - mixture)) + (retRGB * mixture);
-	
+	retRGB = srcRGB + (retRGB - srcRGB) * mixture;
+	if (debug == 1) {
+		rsDebug("blendRGB", blendRGB);
+		rsDebug("srcRGB", srcRGB);
+		rsDebug("retRGB", retRGB);
+	}
 	return retRGB;
 }
 
