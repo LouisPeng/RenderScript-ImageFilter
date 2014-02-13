@@ -1178,6 +1178,57 @@ public class MainActivity extends Activity {
         }
     };
 
+    private class NightVisionFilter extends IImageFilter {
+        // BrightContrastFilter factors
+        private final float mBrightness;
+
+        private final float mContrast;
+
+        private Allocation mTmpOutputAllocation;
+
+        private ScriptC_BrightContrastFilter mBrightContrastFilterScript;
+
+        public NightVisionFilter(float brightness, float contrast) {
+            mBrightness = brightness;
+            mContrast = contrast;
+        }
+
+        @Override
+        protected void _preProcess() {
+            mTmpOutputAllocation = Allocation.createFromBitmap(mRS, mBitmapOut);
+        }
+
+        @Override
+        protected void _postProcess() {
+            mTmpOutputAllocation.destroy();
+            mTmpOutputAllocation = null;
+            mBrightContrastFilterScript.destroy();
+            mBrightContrastFilterScript = null;
+        }
+
+        @Override
+        protected void _process() {
+            mBrightContrastFilterScript = new ScriptC_BrightContrastFilter(mRS, getResources(),
+                    R.raw.brightcontrastfilter);
+            mBrightContrastFilterScript.set_gIn(mInAllocation);
+            mBrightContrastFilterScript.set_gOut(mTmpOutputAllocation);
+            mBrightContrastFilterScript.set_gScript(mBrightContrastFilterScript);
+            mBrightContrastFilterScript.set_gBrightnessFactor(mBrightness);
+            mBrightContrastFilterScript.set_gContrastFactor(mContrast);
+            mBrightContrastFilterScript.invoke_filter();
+
+            ScriptC_SoftGlowFilter script = new ScriptC_SoftGlowFilter(mRS, getResources(), R.raw.softglowfilter);
+
+            script.set_gIn(mInAllocation);
+            script.set_gProcessedIn(mTmpOutputAllocation);
+            script.set_gOut(mOutAllocation);
+            script.set_gScript(script);
+
+            script.invoke_filter();
+            mScript = script;
+        }
+    };
+
     // TODO add new filter above
     private final ArrayList<IImageFilter> mFilterList = new ArrayList<IImageFilter>();
 
@@ -1198,7 +1249,7 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mBitmapIn = loadBitmap(R.drawable.histogram_equal_test);
+        mBitmapIn = loadBitmap(R.drawable.night_vision_test1);
         mBitmapOut = Bitmap.createBitmap(mBitmapIn.getWidth(), mBitmapIn.getHeight(), mBitmapIn.getConfig());
 
         in = (ImageView)findViewById(R.id.displayin);
@@ -1230,6 +1281,7 @@ public class MainActivity extends Activity {
         // testThread.start();
 
         // TODO add filter into list here
+        mFilterList.add(new NightVisionFilter(0.4f, 1.1f));
         mFilterList.add(new ComicFilter());
         mFilterList.add(new ParamEdgeDetectFilter(true, true));
         mFilterList.add(new ParamEdgeDetectFilter(false, true));
@@ -1265,7 +1317,7 @@ public class MainActivity extends Activity {
         mFilterList.add(new MosaicFilter());
         mFilterList.add(new LightFilter());
         mFilterList.add(new IllusionFilter());
-        mFilterList.add(new BrightContrastFilter(1.0f, 1.0f));
+        mFilterList.add(new BrightContrastFilter(0.5f, 0.5f));
         mFilterList.add(new InvertFilter());
         mFilterList.add(new FeatherFilter());
         mFilterList.add(new BrickFilter());
