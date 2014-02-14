@@ -1,45 +1,10 @@
-
 package cn.louispeng.imagefilter.sample;
 
-import cn.louispeng.imagefilter.renderscript.ScriptC_BannerFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_BigBrotherFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_BlackWhiteFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_BlindFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_BrickFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_BrightContrastFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_CleanGlassFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_ColorQuantizeFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_ColorToneFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_ConvolutionFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_EdgeFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_FeatherFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_FillPatternFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_GaussianBlurFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_GradientMapFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_GrayscaleFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_HistogramEqualFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_HslModifyFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_IllusionFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_ImageBlender;
-import cn.louispeng.imagefilter.renderscript.ScriptC_InvertFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_LightFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_MirrorFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_MistFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_MosaicFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_NoiseFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_OilPaintFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_PaintBorderFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_ParamEdgeDetectFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_RadialDistortionFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_RaiseFrameFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_ReliefFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_SaturationModifyFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_SharpFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_SoftGlowFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_Test;
-import cn.louispeng.imagefilter.renderscript.ScriptC_ThreeDGridFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_ThresholdFilter;
-import cn.louispeng.imagefilter.renderscript.ScriptC_VignetteFilter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.ArrayList;
 
 import android.app.Activity;
 import android.graphics.Bitmap;
@@ -58,12 +23,49 @@ import android.view.Menu;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.ImageView;
-
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.ArrayList;
+import cn.louispeng.imagefilter.renderscript.ScriptC_BannerFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_BigBrotherFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_BlackWhiteFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_BlindFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_BrickFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_BrightContrastFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_CleanGlassFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_ColorQuantizeFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_ColorToneFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_ConvolutionFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_EdgeFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_FeatherFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_FillPatternFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_GammaFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_GaussianBlurFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_GradientMapFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_GrayscaleFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_HistogramEqualFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_HslModifyFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_IllusionFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_ImageBlender;
+import cn.louispeng.imagefilter.renderscript.ScriptC_InvertFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_LightFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_MirrorFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_MistFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_MosaicFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_NoiseFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_OilPaintFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_PaintBorderFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_ParamEdgeDetectFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_PixelateFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_PosterizeFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_RadialDistortionFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_RaiseFrameFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_ReflectionFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_ReliefFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_SaturationModifyFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_SharpFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_SoftGlowFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_Test;
+import cn.louispeng.imagefilter.renderscript.ScriptC_ThreeDGridFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_ThresholdFilter;
+import cn.louispeng.imagefilter.renderscript.ScriptC_VignetteFilter;
 
 public class MainActivity extends Activity {
     private class FilterTask extends AsyncTask<Void, Void, Void> {
@@ -314,11 +316,11 @@ public class MainActivity extends Activity {
     private class BrightContrastFilter extends IImageFilter {
         // The brightness factor.
         // Should be in the range [-1.0f, 1.0f].
-        private float mBrightnessFactor;
+        private final float mBrightnessFactor;
 
         // The contrast factor.
         // Should be in the range [-1.0f, 1.0f].
-        private float mContrastFactor;
+        private final float mContrastFactor;
 
         public BrightContrastFilter(float brightnessFactor, float contrastFactor) {
             mBrightnessFactor = brightnessFactor;
@@ -603,21 +605,6 @@ public class MainActivity extends Activity {
         }
     };
 
-    private class ConvolutionFilter extends IImageFilter {
-        @Override
-        protected void _process() {
-            ScriptC_ConvolutionFilter script = new ScriptC_ConvolutionFilter(mRS, getResources(),
-                    R.raw.convolutionfilter);
-
-            script.set_gIn(mInAllocation);
-            script.set_gOut(mOutAllocation);
-            script.set_gScript(script);
-
-            script.invoke_filter();
-            mScript = script;
-        }
-    };
-
     private class FillPatternFilter extends IImageFilter {
         private Bitmap patternBitmap;
 
@@ -625,7 +612,7 @@ public class MainActivity extends Activity {
 
         @Override
         protected void _preProcess() {
-            patternBitmap = loadBitmap(R.drawable.image);
+            patternBitmap = loadBitmap(R.drawable.image1);
             patternAllocation = Allocation.createFromBitmap(mRS, patternBitmap, Allocation.MipmapControl.MIPMAP_NONE,
                     Allocation.USAGE_SCRIPT);
         }
@@ -753,7 +740,6 @@ public class MainActivity extends Activity {
         private float mSigma = 0.75f;
 
         private Allocation mImageWithPaddingBufferAllocation;
-
         private Allocation mTempBufferAllocation;
 
         public GaussianBlurFilter(int padding, float sigma) {
@@ -950,7 +936,7 @@ public class MainActivity extends Activity {
 
         private ScriptC_GaussianBlurFilter mGaussianBlurFilterScript;
 
-        public SoftGlowFilter(int sigma, float brightness, float contrast) {
+        public SoftGlowFilter(float sigma, float brightness, float contrast) {
             mSigma = sigma;
             mBrightness = brightness;
             mContrast = contrast;
@@ -1178,6 +1164,84 @@ public class MainActivity extends Activity {
         }
     };
 
+    private class GammaFilter extends IImageFilter {
+        private final int mGamma;
+
+        public GammaFilter(int gamma) {
+            mGamma = gamma;
+        }
+
+        @Override
+        protected void _process() {
+            ScriptC_GammaFilter script = new ScriptC_GammaFilter(mRS, getResources(), R.raw.gammafilter);
+
+            script.set_gIn(mInAllocation);
+            script.set_gOut(mOutAllocation);
+            script.set_gGamma(mGamma);
+            script.set_gScript(script);
+            script.invoke_filter();
+            mScript = script;
+        }
+    };
+
+    private class PosterizeFilter extends IImageFilter {
+        private final int mLevel;
+
+        public PosterizeFilter(int _level) {
+            mLevel = _level;
+        }
+
+        @Override
+        protected void _process() {
+            ScriptC_PosterizeFilter script = new ScriptC_PosterizeFilter(mRS, getResources(), R.raw.posterizefilter);
+
+            script.set_gIn(mInAllocation);
+            script.set_gOut(mOutAllocation);
+            script.set_gLevel(mLevel);
+            script.set_gScript(script);
+            script.invoke_filter();
+            mScript = script;
+        }
+    };
+
+    private class ReflectionFilter extends IImageFilter {
+        private final boolean mIsHorizontal;
+
+        public ReflectionFilter(boolean isHorizontal) {
+            mIsHorizontal = isHorizontal;
+        }
+
+        @Override
+        protected void _process() {
+            ScriptC_ReflectionFilter script = new ScriptC_ReflectionFilter(mRS, getResources(), R.raw.reflectionfilter);
+
+            script.set_gIn(mInAllocation);
+            script.set_gOut(mOutAllocation);
+            script.set_gIsHorizontal(mIsHorizontal ? 1 : 0);
+            script.invoke_process();
+            mScript = script;
+        }
+    };
+
+    private class PixelateFilter extends IImageFilter {
+        private final int mSquareSize;
+
+        public PixelateFilter(int squareSize) {
+            mSquareSize = squareSize;
+        }
+
+        @Override
+        protected void _process() {
+            ScriptC_PixelateFilter script = new ScriptC_PixelateFilter(mRS, getResources(), R.raw.pixelatefilter);
+
+            script.set_gIn(mInAllocation);
+            script.set_gOut(mOutAllocation);
+            script.set_gSquareSize(mSquareSize);
+            script.invoke_process();
+            mScript = script;
+        }
+    };
+
     private class NightVisionFilter extends IImageFilter {
         // BrightContrastFilter factors
         private final float mBrightness;
@@ -1229,6 +1293,95 @@ public class MainActivity extends Activity {
         }
     };
 
+    private class EmbossFilter extends IImageFilter {
+        private final float mIntensity;
+        private final float mOffset;
+        private final int mUseBrightness;
+
+        public EmbossFilter(final float intensity, final float offset, final boolean useBrightness) {
+            mIntensity = intensity;
+            mOffset = offset;
+            mUseBrightness = useBrightness ? 1 : 0;
+        }
+
+        @Override
+        protected void _process() {
+            ScriptC_ConvolutionFilter script = new ScriptC_ConvolutionFilter(mRS, getResources(),
+                    R.raw.convolutionfilter);
+
+            script.set_gIn(mInAllocation);
+            script.set_gOut(mOutAllocation);
+            script.set_gKernel1stLine(new Float3(-2.0f * mIntensity, -mIntensity, 0.0f));
+            script.set_gKernel2ndLine(new Float3(-mIntensity, 1.0f, mIntensity));
+            script.set_gKernel3rdLine(new Float3(0.0f, mIntensity, 2.0f * mIntensity));
+            script.set_gFactor(1.0f);
+            script.set_gOffset(mOffset);
+            script.set_gUseBrightness(mUseBrightness);
+            script.set_gScript(script);
+
+            script.invoke_filter();
+            mScript = script;
+        }
+    };
+
+    private class LowPassConvolutionFilter extends IImageFilter {
+        private final int mUseBrightness;
+        private final float mOffset;
+
+        public LowPassConvolutionFilter(final float offset, final boolean useBrightness) {
+            mOffset = offset;
+            mUseBrightness = useBrightness ? 1 : 0;
+        }
+
+        @Override
+        protected void _process() {
+            ScriptC_ConvolutionFilter script = new ScriptC_ConvolutionFilter(mRS, getResources(),
+                    R.raw.convolutionfilter);
+
+            script.set_gIn(mInAllocation);
+            script.set_gOut(mOutAllocation);
+            script.set_gKernel1stLine(new Float3(1.0f, 1.0f, 1.0f));
+            script.set_gKernel2ndLine(new Float3(1.0f, 1.0f, 1.0f));
+            script.set_gKernel3rdLine(new Float3(1.0f, 1.0f, 1.0f));
+            script.set_gFactor(9.0f);
+            script.set_gOffset(mOffset);
+            script.set_gUseBrightness(mUseBrightness);
+            script.set_gScript(script);
+
+            script.invoke_filter();
+            mScript = script;
+        }
+    };
+
+    private class EdgeDetectionConvolutionFilter extends IImageFilter {
+        private final int mUseBrightness;
+        private final float mOffset;
+
+        public EdgeDetectionConvolutionFilter(final float offset, final boolean useBrightness) {
+            mOffset = offset;
+            mUseBrightness = useBrightness ? 1 : 0;
+        }
+
+        @Override
+        protected void _process() {
+            ScriptC_ConvolutionFilter script = new ScriptC_ConvolutionFilter(mRS, getResources(),
+                    R.raw.convolutionfilter);
+
+            script.set_gIn(mInAllocation);
+            script.set_gOut(mOutAllocation);
+            script.set_gKernel1stLine(new Float3(-1.0f, 0.0f, -1.0f));
+            script.set_gKernel2ndLine(new Float3(0.0f, 4.0f, 0.0f));
+            script.set_gKernel3rdLine(new Float3(-1.0f, 0.0f, -1.0f));
+            script.set_gFactor(1.0f);
+            script.set_gOffset(mOffset);
+            script.set_gUseBrightness(mUseBrightness);
+            script.set_gScript(script);
+
+            script.invoke_filter();
+            mScript = script;
+        }
+    };
+
     // TODO add new filter above
     private final ArrayList<IImageFilter> mFilterList = new ArrayList<IImageFilter>();
 
@@ -1249,10 +1402,10 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mBitmapIn = loadBitmap(R.drawable.night_vision_test1);
+        mBitmapIn = loadBitmap(R.drawable.image2);
         mBitmapOut = Bitmap.createBitmap(mBitmapIn.getWidth(), mBitmapIn.getHeight(), mBitmapIn.getConfig());
 
-        in = (ImageView)findViewById(R.id.displayin);
+        in = (ImageView) findViewById(R.id.displayin);
         in.setImageBitmap(mBitmapIn);
         in.setOnClickListener(new OnClickListener() {
             @Override
@@ -1264,7 +1417,7 @@ public class MainActivity extends Activity {
             }
         });
 
-        out = (ImageView)findViewById(R.id.displayout);
+        out = (ImageView) findViewById(R.id.displayout);
         out.setImageBitmap(mBitmapOut);
 
         // Test
@@ -1281,7 +1434,19 @@ public class MainActivity extends Activity {
         // testThread.start();
 
         // TODO add filter into list here
+        mFilterList.add(new EdgeDetectionConvolutionFilter(0.1f, false));
+        mFilterList.add(new EdgeDetectionConvolutionFilter(0.1f, true));
+        mFilterList.add(new LowPassConvolutionFilter(0.1f, false));
+        mFilterList.add(new LowPassConvolutionFilter(0.1f, true));
+        mFilterList.add(new EmbossFilter(1.0f, 0.1f, false));
+        mFilterList.add(new EmbossFilter(1.0f, 0.1f, true));
+        mFilterList.add(new SoftGlowFilter(3.0f, 0.4f, 1.1f));
         mFilterList.add(new NightVisionFilter(0.4f, 1.1f));
+        mFilterList.add(new PixelateFilter(20));
+        mFilterList.add(new ReflectionFilter(true));
+        mFilterList.add(new ReflectionFilter(false));
+        mFilterList.add(new PosterizeFilter(2));
+        mFilterList.add(new GammaFilter(50));
         mFilterList.add(new ComicFilter());
         mFilterList.add(new ParamEdgeDetectFilter(true, true));
         mFilterList.add(new ParamEdgeDetectFilter(false, true));
@@ -1290,7 +1455,6 @@ public class MainActivity extends Activity {
         mFilterList.add(new BannerFilter(true));
         mFilterList.add(new BannerFilter(false));
         mFilterList.add(new BigBrotherFilter());
-        mFilterList.add(new SoftGlowFilter(10, 0.1f, 0.1f));
         mFilterList.add(new SmashColorFilter());
         mFilterList.add(new BlockPrintFilter());
         mFilterList.add(new RadialDistortionFilter());

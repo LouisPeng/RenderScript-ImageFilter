@@ -5,10 +5,10 @@
 #include "Clamp.rsh"
 
 // set from the java SDK level
-float gGamma;
 rs_allocation gIn;
 rs_allocation gOut;
 rs_script gScript;
+int32_t gLevel;
 
 // magic factor
 
@@ -22,17 +22,16 @@ static void setup() {
 	_height = rsAllocationGetDimY(gIn);
 }
 
-static float initLUTtableItem(const float _fInvGamma, const int nLUTIndex) {
-	float fMax = pow(255.0f, _fInvGamma) / 255.0f;
-	float d = pow((float)nLUTIndex, _fInvGamma);
-	return FClampFloat(d / fMax, 0.0f, 255.0f);
+static float initLUTtableItem(const float _level, const int _LUTIndex) {
+	float d = 255.0f / (_level - 1.0f);
+    int32_t n = (int32_t) (_LUTIndex / d + 0.5f); // round
+    return FClampFloat(d * n, 0.0f, 255.0f);  // round
 }
 
 static void initLUTtable() {
-	gGamma = (gGamma >= 1.0f) ? gGamma : 1.0f;
-	float _fInvGamma = 1.0f / (gGamma / 100.0f);
-	for (int32_t nLUTIndex = 0; nLUTIndex <= 255; nLUTIndex++) {
-		LUT[nLUTIndex] = initLUTtableItem(_fInvGamma, nLUTIndex);
+	int32_t _level = ((gLevel >= 2) ? gLevel : 2);
+	for (int32_t _LUTIndex = 0; _LUTIndex <= 255; _LUTIndex++) {
+		LUT[_LUTIndex] = initLUTtableItem(_level, _LUTIndex);
 	}
 }
 
