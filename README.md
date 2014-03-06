@@ -1,7 +1,7 @@
 RenderScript-ImageFilter
 ========================
 
-Implements the ImageFilter by RenderScript.
+Implements image filters using RenderScript.
 
 在Note3上进行整数计算性能对比，设定RenderScript运算耗时为1单位时间，那么NDK需1.42单位时间，Java需6单位时间。
 在Nexus5（开启ART）上进行整数计算性能对比，设定RenderScript运算耗时为1单位时间，那么NDK需1.42单位时间，Java需3.4单位时间。
